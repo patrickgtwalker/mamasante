@@ -2,8 +2,7 @@ Package: sifter
 Title: Tool to Apply Dust
 Version: 0.0.0.9000
 Authors@R: 
-    person("Joseph", "Hicks", , "jthicks@imperial.ac.uk", role = c("aut"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+    person("Joseph", "Hicks", email = "jthicks@imperial.ac.uk", role = c("aut","cre"))
 Description: Tool to Apply Dust
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license

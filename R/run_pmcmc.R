@@ -48,11 +48,11 @@ run_pmcmc <- function(data_raw,
                       seasonality_check = 0,##If 1, saves values of seasonality equilibrium
                       seed = 1L){
   ## Modify dates from data
-  start_obs <- min(as.Date(data_raw$month))#Month of first observation (in Date format)
-  time_origin <- as.Date(ifelse(lubridate::month(start_obs)!=1,paste0(lubridate::year(start_obs),'-01-01'),paste0(lubridate::year(start_obs)-1,'-01-01'))) #January 1 of the first year of observation (in Date format)
-  start_stoch <- as.Date(zoo::as.yearmon(start_obs)) #Start of stochastic schedule (First day of the month of first observation)
+  start_obs <- min(zoo::as.Date(data_raw$month))#Month of first observation (in Date format)
+  time_origin <- zoo::as.Date(ifelse(lubridate::month(start_obs)!=1,paste0(lubridate::year(start_obs),'-01-01'),paste0(lubridate::year(start_obs)-1,'-01-01'))) #January 1 of the first year of observation (in Date format)
+  start_stoch <- zoo::as.Date(zoo::as.yearmon(start_obs)) #Start of stochastic schedule (First day of the month of first observation)
   data_raw_time <- data_raw %>%
-    mutate(date = as.Date(zoo::as.yearmon(month), frac = 0.5))%>% #Convert dates to middle of month
+    mutate(date = zoo::as.Date(zoo::as.yearmon(month), frac = 0.5))%>% #Convert dates to middle of month
     mutate(t = as.integer(difftime(date,time_origin,units="days"))) #Calculate date as number of days since January 1 of first year of observation
   initial_time <- min(data_raw_time$t) - 30 #Start particle_filter_data one month before first ime in data
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
@@ -88,7 +88,7 @@ run_pmcmc <- function(data_raw,
 
   ## Provide schedule for changes in stochastic process (in this case EIR)
   ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the first year of observation
-  stochastic_schedule <- as.integer(difftime(seq.Date(start_stoch,max(as.Date(data_raw_time$date+30)),by='month'),time_origin,units="days"))#[-1]
+  stochastic_schedule <- as.integer(difftime(seq.Date(start_stoch,max(zoo::as.Date(data_raw_time$date+30)),by='month'),time_origin,units="days"))#[-1]
   # print('stochastic_schedule assigned')
 
   #Provide age categories, proportion treated, and number of heterogeneity brackets
