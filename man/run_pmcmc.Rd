@@ -21,7 +21,8 @@ run_pmcmc(
   preyears = 2,
   seasonality_on = 1,
   seasonality_check = 0,
-  seed = 1L
+  seed = 1L,
+  start_pf_time = 30
 )
 }
 \arguments{
@@ -60,6 +61,8 @@ If state_check = 0, no values are printed}
 \item{seasonality_check}{Toggle saving values of seasonality equilibrium (default = 1)}
 
 \item{seed}{Allows user to specify a seed (default = 1L)}
+
+\item{start_pf_time}{Number of days before first observation that particle filter will start (default = 30)}
 }
 \description{
 This function sets up and runs a particle MCMC that uses Dust, Odin and MCState
