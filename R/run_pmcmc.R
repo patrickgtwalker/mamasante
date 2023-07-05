@@ -48,7 +48,8 @@ run_pmcmc <- function(data_raw,
                       ## If seasonality_on = 0, runs the stochastic model based on the standard equilibrium solution
                       seasonality_check = 0,##If 1, saves values of seasonality equilibrium
                       seed = 1L,
-                      start_pf_time = 30){
+                      start_pf_time = 30,
+                      stoch_param = c('EIR','betaa')){
   ## Modify dates from data
   # str(data_raw$month)
   # print(data_raw$month)
@@ -104,7 +105,8 @@ run_pmcmc <- function(data_raw,
                    Uout = info$index$Uout,
                    p_det_out = info$index$p_det_out,
                    phi_out = info$index$phi_out,
-                   b_out = info$index$b_out))
+                   b_out = info$index$b_out,
+                   spz_rate = info$index$spz_rate))
   }
 
   ## Provide schedule for changes in stochastic process (in this case EIR)
@@ -186,8 +188,8 @@ run_pmcmc <- function(data_raw,
         # Transform seasonality model output to match expected input of the stochastic model
         init4pmcmc <- transform_init(out)
         # print(init4pmcmc)
-        # cat('prev equilibrium: ',state$prev,'\n')
-        # cat('prev seasonal: ',init4pmcmc$prev,'\n')
+        cat('prev equilibrium: ',state_use$prev,'\n')
+        cat('prev seasonal: ',init4pmcmc$prev,'\n')
 
         #Print some equilibrium checks if state_check==1
         if(state_check==1){
@@ -196,32 +198,39 @@ run_pmcmc <- function(data_raw,
 
           deriv_S11 <- -init4pmcmc$FOI_eq[1,1]*init4pmcmc$init_S[1,1] + init4pmcmc$rP*init4pmcmc$init_P[1,1] + init4pmcmc$rU*init4pmcmc$init_U[1,1] +
             init4pmcmc$eta*H*init4pmcmc$het_wt[1] - (init4pmcmc$eta+init4pmcmc$age_rate[1])*init4pmcmc$init_S[1,1]
+          print('Seasonal equilibrium')
           cat('deriv S check: ',deriv_S11,'\n')
           b <- init4pmcmc$b0 * ((1-init4pmcmc$b1)/(1+(init4pmcmc$init_IB[1,1]/init4pmcmc$IB0)^init4pmcmc$kB)+init4pmcmc$b1)
-          print(b)
+          cat('b check: ',b,'\n')
           EIR_eq11 <- init4pmcmc$init_EIR/365 * init4pmcmc$rel_foi[1] * init4pmcmc$foi_age[1]
-          print(EIR_eq11)
           FOI_lag <- EIR_eq11 * (if(init4pmcmc$init_IB[1,1]==0) init4pmcmc$b0 else b)
-          print(FOI_lag)
           deriv_FOI111 <- (init4pmcmc$lag_rates/init4pmcmc$dE)*FOI_lag - (init4pmcmc$lag_rates/init4pmcmc$dE)*init4pmcmc$FOI_eq[1,1]
           cat('deriv FOI check: ',deriv_FOI111,'\n')
 
-          # cat('S check: ',init4pmcmc$init_S-state_use$init_S,'\n')
-          # cat('T check: ',init4pmcmc$init_T-state_use$init_T,'\n')
-          # cat('D check: ',init4pmcmc$init_D-state_use$init_D,'\n')
-          # cat('A check: ',init4pmcmc$init_A-state_use$init_A,'\n')
-          # cat('U check: ',init4pmcmc$init_U-state_use$init_U,'\n')
-          # cat('P check: ',init4pmcmc$init_P-state_use$init_P,'\n')
-          cat('init_EIR: ',state_use$init_EIR,'\n')
-          cat('init_EIR seasonal: ',init4pmcmc$init_EIR,'\n')
-          cat('prev seasonal: ',state$prev,'\n')
-          cat('prev seasonal: ',init4pmcmc$prev,'\n')
+          print('Compare equilibrium state to seasonal equilibrium')
+          print('The following values should be 0 or very close.')
+          cat('S check: ',init4pmcmc$init_S-state$init_S,'\n')
+          cat('T check: ',init4pmcmc$init_T-state$init_T,'\n')
+          cat('D check: ',init4pmcmc$init_D-state$init_D,'\n')
+          cat('A check: ',init4pmcmc$init_A-state$init_A,'\n')
+          cat('U check: ',init4pmcmc$init_U-state$init_U,'\n')
+          cat('P check: ',init4pmcmc$init_P-state$init_P,'\n')
+          cat('Iv check: ',init4pmcmc$init_Iv-state$init_Iv,'\n')
+          cat('init_EIR check: ',state$init_EIR-init4pmcmc$init_EIR,'\n')
+          cat('prev check: ',state$prev-init4pmcmc$prev,'\n')
+
+          print('Helpful values for reference:')
+          cat('init_EIR: ',state$init_EIR,'\n')
+          cat('Equilibrium prev: ',state$prev,'\n')
+          cat('Seasonal equilibrium prev: ',init4pmcmc$prev,'\n')
+          saveRDS(append(mpl,init4pmcmc),'seasonal_equil_values.RDS')
+          saveRDS(state,'original_equil_values.RDS')
 
           # mpl['init_EIR'] <- NULL
           # View(init4pmcmc)
           # View(state_use)
         }
-        return(init4pmcmc) #Append all parameters from model parameter list for stochastic model
+        return(append(mpl,init4pmcmc)) #Append all parameters from model parameter list for stochastic model
       }
       else{
         return(state)
@@ -231,7 +240,9 @@ run_pmcmc <- function(data_raw,
 
   ## Load stochastic model in odin.dust
   # print('about to load stochastic model')
-  odin_stoch <- system.file("odin", "odinmodelmatchedstoch.R", package = "sifter")
+  ##Switch between EIR and mosquito emergence models
+  stoch_file <- ifelse(stoch_param=='betaa','odinmodelmatchedstoch_mozemerg.R','odinmodelmatchedstoch.R')
+  odin_stoch <- system.file("odin", stoch_file, package = "sifter")
   model <- odin.dust::odin_dust(odin_stoch)
   # print('loaded stochastic model')
 

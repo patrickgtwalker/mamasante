@@ -249,20 +249,19 @@ tau1 <- user() # duration of host-seeking behaviour
 tau2 <- user() # duration of resting behaviour
 Q0 <- user() # proportion of anthropophagy
 
-fv <- 1/( tau1 + tau2 ) # mosquito feeding rate (zbar from intervention param.)
 av <- fv*Q0
 
 DY<-user()
 EIR_SD<-user()
-init_EIR <- user()
-max_EIR <- user()
-state_check <- user()
-initial(log_EIR) <- log(init_EIR/DY)
-# update(log_EIR) <- min(log_EIR+rnorm(0,1)*EIR_SD,log(max_EIR/DY))
-eir_update <- if(state_check==0) min(log_EIR+rnorm(0,1)*EIR_SD,log(max_EIR/DY)) else log(init_EIR/DY)
-update(log_EIR) <- eir_update
-EIR[,] <- exp(log_EIR) * rel_foi[j] * foi_age[i]
-output(EIR_out) <- exp(log_EIR)*DY
+# init_EIR <- user()
+# max_EIR <- user()
+# EIR[,] <- exp(log_EIR) * rel_foi[j] * foi_age[i]
+# output(EIR_out) <- exp(log_EIR)*DY
+output(EIR_out) <- (av * Iv/omega)*DY
+
+dim(EIR) <- c(na,nh)
+EIR[,] <- rel_foi[j] * foi_age[i] * Iv*av0/omega
+
 
 #EIR_td<-interpolate(EIR_times, EIR_valsd, "constant")
 # EIR_times[]<-user()
@@ -275,7 +274,6 @@ dim(foi_age) <- na
 foi_age[] <- user()
 dim(rel_foi) <- nh
 rel_foi[] <- user()
-dim(EIR) <- c(na,nh)
 
 #output(Ivout) <- Iv
 
@@ -302,71 +300,90 @@ dim(EIR) <- c(na,nh)
 #theta2 <- if(ssa0 == 0 && ssa1  == 0 && ssa2  == 0 && ssb1  == 0 && ssb2  == 0 && ssb3  == 0 && theta_c  == 0)
  # 1 else max((ssa0+ssa1*cos(2*pi*t/365)+ssa2*cos(2*2*pi*t/365)+ssa3*cos(3*2*pi*t/365)+ssb1*sin(2*pi*t/365)+ssb2*sin(2*2*pi*t/365)+ ssb3*sin(3*2*pi*t/365) ) /theta_c,0.001)
 #theta2 <-1
-##------------------------------------------------------------------------------
-#####################
-## MOSQUITO STATES ##
-#####################
-##------------------------------------------------------------------------------
+# ##------------------------------------------------------------------------------
+# #####################
+# ## MOSQUITO STATES ##
+# #####################
+# ##------------------------------------------------------------------------------
 
 # See supplementary materials S1 from http://journals.plos.org/plosmedicine/article?id=10.1371/journal.pmed.1000324#s6
+# fitted entomological parameters:
+mv0 <- user() # initial mosquito density
+mu0 <- user() # baseline mosquito death rate
+p10 <- user() # prob of surviving 1 feeding cycle
+p2 <- user() #prob of surviving one resting cycle
+fv <- 1/( tau1 + tau2 ) # mosquito feeding rate (zbar from intervention param.)
+mu <- -fv*log(p10*p2) # mosquito death rate
+omega <- user() #normalising constant for biting rates
+# cA is the infectiousness to mosquitoes of humans in the asmyptomatic compartment broken down
+# by age/het/int category, infectiousness depends on p_det which depends on detection immunity
+cU <- user() # infectiousness U -> mosq
+cD <- user() # infectiousness D -> mosq
+cT <- user() # T -> mosq
+av0 <- user()
+gamma1 <- user() # fitted value of gamma1 characterises cA function
+dim(cA) <- c(na,nh)
+cA[,] <- cU + (cD-cU)*p_det[i,j]^gamma1
+# Current hum->mos FOI depends on the number of individuals now producing gametocytes (12 day lag)
+delayGam <- user() # Lag from parasites to infectious gametocytes
+delayMos <- user() # Extrinsic incubation period.
+
+# Number of mosquitoes that become infected at each time point
+surv <- exp(-mu*delayMos)
+
+# Force of infection from humans to mosquitoes
+lag_ratesMos <- lag_rates
+
+FOIv_eq <- user()
+initial(FOIv[]) <- FOIv_eq*delayGam/lag_ratesMos
+dim(FOIv) <- lag_ratesMos
+
+FOIvijk[1:na, 1:nh] <- av0 * (cT*T[i,j] + cD*D[i,j] + cA[i,j]*A[i,j] + cU*U[i,j]) * rel_foi[j] *foi_age[i]/omega
+dim(FOIvijk) <- c(na,nh)
+lag_FOIv <- sum(FOIvijk)
+
+deriv(FOIv[1]) <- lag_FOIv - (lag_ratesMos/delayGam)*FOIv[1]
+deriv(FOIv[2:lag_ratesMos]) <- (lag_ratesMos/delayGam)*FOIv[i-1] -
+  (lag_ratesMos/delayGam)*FOIv[i]
+
+ince <- FOIv[lag_ratesMos] * lag_ratesMos/delayGam * Sv
+
+initial(ince_delay[]) <- FOIv_eq*init_Sv*mv0*delayMos/lag_ratesMos
+dim(ince_delay) <- lag_ratesMos
+
+deriv(ince_delay[1]) <- ince - (lag_ratesMos/delayMos)*ince_delay[1]
+deriv(ince_delay[2:lag_ratesMos]) <- (lag_ratesMos/delayMos)*ince_delay[i-1] -
+  (lag_ratesMos/delayMos)*ince_delay[i]
+
+incv <- ince_delay[lag_ratesMos]*lag_ratesMos/delayMos *surv
+
+# feed in betaa values from a random walk
+state_check <- user()
+betaa_eq <- user()
+initial(betaa_td) <- betaa_eq
+betaa_update <- if(state_check==0) betaa_td+rnorm(0,1)*EIR_SD else betaa_eq
+update(betaa_td) <- betaa_update
+output(betaa_out) <- betaa_td
 
 # Sv - Susceptible mosquitoes
 # Ev - latently infected (exposed) mosquitoes. Number of compartments used to simulate delay in becoming infectious
 # Iv - Infectious mosquitoes
 
 # initial state values:
-#init_Sv <- user()
-#init_Ev <- user()
-#init_Iv <- user()
-#initial(Sv) <- init_Sv * mv0
-#initial(Ev) <- init_Ev * mv0
-#initial(Ev[1:10]) <- init_Ev/10 * mv0 # Options if not using a delayed delay
-#dim(Ev) <- 10
-#initial(Iv) <- init_Iv * mv0
+init_Sv <- user()
+init_Ev <- user()
+init_Iv <- user()
+initial(Sv) <- init_Sv * mv0
+initial(Ev) <- init_Ev * mv0
+initial(Iv) <- init_Iv * mv0
 
-# cA is the infectiousness to mosquitoes of humans in the asmyptomatic compartment broken down
-# by age/het/int category, infectiousness depends on p_det which depends on detection immunity
-#cU <- user() # infectiousness U -> mosq
-#cD <- user() # infectiousness D -> mosq
-#cT <- user() # T -> mosq
-#gamma1 <- user() # fitted value of gamma1 characterises cA function
-#dim(cA) <- c(na,nh)
-#cA[,] <- cU + (cD-cU)*p_det[i,j]^gamma1
-
-# Force of infection from humans to mosquitoes
-#dim(FOIvij) <- c(na,nh)
-# <- user() #normalising constant for biting rates
-#FOIvij[1:na, 1:nh] <- (cT*T[i,j] + cD*D[i,j] + cA[i,j]*A[i,j] + cU*U[i,j]) *av* rel_foi[j] *foi_age[i]/omega
-#lag_FOIv=sum(FOIvij)
-
-# Current hum->mos FOI depends on the number of individuals now producing gametocytes (12 day lag)
-#delayGam <- user() # Lag from parasites to infectious gametocytes
-#delayMos <- user() # Extrinsic incubation period.
-#FOIv <- delay(lag_FOIv, delayGam)
-
-# Number of mosquitoes that become infected at each time point
-#surv <- exp(-mu*delayMos)
-#ince <- FOIv * Sv
-#lag_incv <- ince * surv
-#incv <- delay(lag_incv, delayMos)
-#incv <- lag_incv
-
-# Number of mosquitoes born (depends on PL, number of larvae), or is constant outside of seasonality
-#betaa <- 0.5*PL/dPL
-#betaa <- mv0 * mu0 * theta2
-
-#deriv(Sv) <- -ince - mu*Sv + betaa
-#deriv(Ev) <- ince - incv - mu*Ev
-#deriv(Iv) <- incv - mu*Iv
+deriv(Sv) <- -ince - mu*Sv + betaa_td
+deriv(Ev) <- ince - incv - mu*Ev
+deriv(Iv) <- incv - mu*Iv
 
 # Total mosquito population
-#mv = Sv+Ev+Iv
-
-# model options if don't want to use a delayed delay
-#deriv(Ev[1]) <- ince - Ev[1] - mu*Ev[1]
-#deriv(Ev[2:10]) <- Ev[i-1] - Ev[i] - mu*Ev[i]
-#mv = Sv+sum(Ev)+Iv
-
+mv = Sv+Ev+Iv
+output(spz_rate) <- Iv/mv
 
 ##------------------------------------------------------------------------------
 ###################

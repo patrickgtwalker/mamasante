@@ -291,24 +291,30 @@ equilibrium_init_create_stripped <- function(age_vector, het_brackets,
 
   ## collate init
   res <- list(init_S = S_eq, init_T = T_eq, init_D = D_eq, init_A = A_eq, init_U = U_eq,
-              init_P = P_eq, init_Y = Y_eq, init_IB = IB_eq, init_ID = ID_eq, init_ICA = ICA_eq,
-              init_ICM = ICM_eq, ICM_age = as.vector(ICM_age),IC_20=IC_20,
+              init_P = P_eq, init_IB = IB_eq, init_ID = ID_eq, init_ICA = ICA_eq,
+              ICM_age = as.vector(ICM_age),
               init_Iv = Iv_eq, init_Sv = Sv_eq,init_Ev = Ev_eq, init_PL = PL_eq, init_LL = LL_eq, init_EL = EL_eq,
-              age_width = age_width, age_rate = age_rate, het_wt = het_wt, het_x = het_x,
+              age_rate = age_rate, het_wt = het_wt,
               foi_age = foi_age, rel_foi = rel_foi,
               na = na, nh = nh, x_I = x_I,
-              omega = omega, K0 = K0, mv0 = mv0, betaa_eq = betaa_eq,
+              omega = omega, mv0 = mv0, betaa_eq = betaa_eq,
               FOIv_eq = FOIv_eq,
-              FOI_eq = FOI_eq, EIR_eq = EIR_eq, init_EIR = init_EIR, cA_eq = cA_eq,
+              FOI_eq = FOI_eq, EIR_eq = EIR_eq, init_EIR = init_EIR,
               den = den, age59 = age59, age05 = age05,
-              # ssa0 = mpl$ssa0, ssa1 = mpl$ssa1,ssa2 = mpl$ssa2, ssa3 = mpl$ssa3, ssb1 = mpl$ssb1, ssb2 = mpl$ssb2, ssb3 = mpl$ssb3,theta_c = mpl$theta_c,
               pi = pi,
               prev05 = prev,inc = inc, inc05=inc05,
               age = age_vector*mpl$DY, ft = ft,
-              betaS = betaS, betaA = betaA, betaU = betaU, FOIvij_eq=FOIvij_eq,
-              age_mid_point = age_mid_point, het_bounds = het_bounds,
-              age20l = age20l, age20u = age20u, age_20_factor = age_20_factor,
-              p_det_eq = p_det_eq, b_eq = b, phi_eq = phi)
+              age20l = age20l, age20u = age20u, age_20_factor = age_20_factor
+              ##extras for checking:
+              ##,ssa0 = mpl$ssa0, ssa1 = mpl$ssa1,ssa2 = mpl$ssa2, ssa3 = mpl$ssa3, ssb1 = mpl$ssb1, ssb2 = mpl$ssb2, ssb3 = mpl$ssb3,theta_c = mpl$theta_c,
+              ##init_Y = Y_eq, init_ICM = ICM_eq,IC_20=IC_20,age_width = age_width,
+              ##het_x = het_x,K0 = K0,cA_eq = cA_eq,
+              ##betaS = betaS, betaA = betaA, betaU = betaU,FOIvij_eq=FOIvij_eq,
+              ##age_mid_point = age_mid_point, het_bounds = het_bounds,
+              ##p_det_eq = p_det_eq, b_eq = b, phi_eq = phi
+
+
+              )
 
   ##Check that equilibrium solution produces an equilibrium for
   ##the desired model

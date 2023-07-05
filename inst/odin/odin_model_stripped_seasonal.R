@@ -312,8 +312,8 @@ incv <- delay(lag_incv, delayMos)
 # incv <- lag_incv
 
 # Number of mosquitoes born (depends on PL, number of larvae), or is constant outside of seasonality
-betaa <- 0.5*PL/dPL
-#betaa <- mv0 * mu0 * theta2
+# betaa <- 0.5*PL/dPL
+betaa <- mv0 * mu0 * theta2
 
 deriv(Sv) <- -ince - mu*Sv + betaa
 deriv(Ev) <- ince - incv - mu*Ev
@@ -431,7 +431,7 @@ output(inc05) <- sum(clin_inc0to5)/sum(den[1:age05])
 
 output(inc) <- sum(clin_inc[,])
 
-EIR_agg[,] <- EIR[i,j]* DY /(rel_foi[j] * foi_age[i]) 
+EIR_agg[,] <- EIR[i,j]* DY /(rel_foi[j] * foi_age[i])
 dim(EIR_agg) <- c(na,nh)
 # Param checking outputs
 #output(mu) <- mu
@@ -494,7 +494,9 @@ output(age20l_init) <- age20l
 output(age20u_init) <- age20u
 output(age_20_factor_init) <- age_20_factor
 output(mv_init) <- mv
-output(mv0_init) <- mv0
+output(Sv_init) <- Sv/mv
+output(Ev_init) <- Ev/mv
+output(Iv_init) <- Iv/mv
 output(eta_init) <- eta
 output(rA_init) <- rA
 output(rT_init) <- rT
@@ -534,3 +536,14 @@ output(Q0_init) <- Q0
 output(state_check_init) <- state_check
 output(tau1_init) <- tau1
 output(tau2_init) <- tau2
+output(betaa_eq) <- betaa
+av0 <- user()
+output(av0_init) <- av0
+##Output extra compartments as well for now
+output(EL_init) <- EL
+output(LL_init) <- LL
+output(PL_init) <- PL
+output(EIR_eq[,]) <- EIR[i,j]
+dim(EIR_eq) <- c(na,nh)
+output(pi_eq) <- pi
+output(delayGam_eq) <- delayGam
