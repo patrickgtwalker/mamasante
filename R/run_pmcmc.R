@@ -188,8 +188,8 @@ run_pmcmc <- function(data_raw,
         # Transform seasonality model output to match expected input of the stochastic model
         init4pmcmc <- transform_init(out)
         # print(init4pmcmc)
-        cat('prev equilibrium: ',state_use$prev,'\n')
-        cat('prev seasonal: ',init4pmcmc$prev,'\n')
+        # cat('prev equilibrium: ',state_use$prev,'\n')
+        # cat('prev seasonal: ',init4pmcmc$prev,'\n')
 
         #Print some equilibrium checks if state_check==1
         if(state_check==1){

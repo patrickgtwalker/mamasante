@@ -139,7 +139,6 @@ admin_match <- function(admin_unit = NULL, country = NULL,
 transform_init <- function(final_state = NULL){
   f <- final_state
   last <- length(f$FOI_init[,1,1])
-  cat('init_T length in seasonal eq:',length(f$T_init[last,,]),'\n')
   list(FOI_eq = f$FOI_init[last,,],
        init_EIR = f$EIR_init[last,1,1],
        init_S = f$S_init[last,,],
