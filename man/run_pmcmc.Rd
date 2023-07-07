@@ -22,7 +22,8 @@ run_pmcmc(
   seasonality_on = 1,
   seasonality_check = 0,
   seed = 1L,
-  start_pf_time = 30
+  start_pf_time = 30,
+  stoch_param = c("EIR", "betaa")
 )
 }
 \arguments{

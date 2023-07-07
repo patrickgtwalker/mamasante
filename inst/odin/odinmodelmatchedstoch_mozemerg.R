@@ -361,8 +361,8 @@ incv <- ince_delay[lag_ratesMos]*lag_ratesMos/delayMos *surv
 state_check <- user()
 betaa_eq <- user()
 initial(betaa_td) <- betaa_eq
-betaa_update <- if(state_check==0) betaa_td+rnorm(0,1)*EIR_SD else betaa_eq
-update(betaa_td) <- betaa_update
+betaa_update <- if(state_check==0) log(betaa_td)+rnorm(0,1)*EIR_SD else log(betaa_eq)
+update(betaa_td) <- exp(betaa_update)
 output(betaa_out) <- betaa_td
 
 # Sv - Susceptible mosquitoes
