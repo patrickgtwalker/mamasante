@@ -24,35 +24,42 @@
 #' @param start_pf_time Number of days before first observation that particle filter will start (default = 30)
 
 #' @export
-test_pf <- function(data_raw,
-                      n_particles=200,
-                      proposal_matrix,
-                      max_EIR=1000,
-                      # EIR_vol,
-                      # proposal_dist,
-                      # init_EIR = 100,
-                      max_steps = 1e7,
-                      atol = 1e-3,
-                      rtol = 1e-6,
-                      n_steps = 500,
-                      n_threads = 4,
-                      lag_rates = 10,
-                      state_check = 0,## Run equilibrium checks
-                      # If state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
-                      # If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
-                      # If state_check = 0, no values are printed
-                      country = NULL,
-                      admin_unit = NULL,
-                      preyears = 2, #Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began
-                      seasonality_on = 1,  ## state_check = 1 runs a deterministic seasonal model before running the stochastic model to get more realistic immunity levels
-                      ## If seasonality_on = 0, runs the stochastic model based on the standard equilibrium solution
-                      seasonality_check = 0,##If 1, saves values of seasonality equilibrium
-                      seed = 1L,
-                      start_pf_time = 30,
-                      stoch_param = c('EIR','betaa')){
+test_pf <- function(data_raw=NULL,
+                    data_raw_pg=NULL,
+                    data_raw_mg=NULL,
+                    n_particles=200,
+                    proposal_matrix,
+                    max_EIR=1000,
+                    # EIR_vol,
+                    # proposal_dist,
+                    # init_EIR = 100,
+                    max_steps = 1e7,
+                    atol = 1e-6,
+                    rtol = 1e-6,
+                    n_steps = 500,
+                    n_threads = 4,
+                    lag_rates = 10,
+                    state_check = 0,## Run equilibrium checks
+                    # If state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
+                    # If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
+                    # If state_check = 0, no values are printed
+                    country = NULL,
+                    admin_unit = NULL,
+                    preyears = 2, #Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began
+                    seasonality_on = 1,  ## state_check = 1 runs a deterministic seasonal model before running the stochastic model to get more realistic immunity levels
+                    ## If seasonality_on = 0, runs the stochastic model based on the standard equilibrium solution
+                    seasonality_check = 0,##If 1, saves values of seasonality equilibrium
+                    seed = 1L,
+                    start_pf_time = 30,
+                    stoch_param = c('EIR','betaa'),
+                    comparison = c('u5','pgmg')){
   ## Modify dates from data
   # str(data_raw$month)
   # print(data_raw$month)
+  ##Merge primigrav and multigrav datasets if necessary.
+  if(comparison=='pgmg'){
+    data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month','t'),suffix = c('.pg','.mg'))
+  }
   start_obs <- min(zoo::as.Date(zoo::as.yearmon(data_raw$month)))#Month of first observation (in Date format)
   time_origin <- zoo::as.Date(paste0(lubridate::year(start_obs)-1,'-01-01')) #January 1 of year before observation (in Date format)
   data_raw_time <- data_raw
@@ -67,28 +74,6 @@ test_pf <- function(data_raw,
   start_stoch <- zoo::as.Date(start_obs - start_pf_time) #Start of stochastic schedule; needs to start when particle filter starts
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
   # print('Data processed')
-
-  # Binomial function that checks for NAs
-  ll_binom <- function(obs, model) {
-    if (is.na(obs$positive)) {
-      # Creates vector of zeros in ll with same length, if no data
-      # Length = number of particles
-      ll_obs <- numeric(length(model))
-    } else {
-      ll_obs <- dbinom(x = obs$positive,
-                       size = obs$tested,
-                       prob = model,
-                       log = TRUE)
-    }
-    ll_obs
-  }
-  # Compare function to calculate likelihood
-  compare <- function(state, observed, pars = NULL) {
-    # print('in compare function')
-    ll <- ll_binom(obs=observed,model=state[1,])
-    # print(ll)
-    return(ll)
-  }
 
   ##Output from particle filter
   ##    run: output used for likelihood calculation
@@ -132,7 +117,8 @@ test_pf <- function(data_raw,
                                     admin_unit = admin_unit,
                                     start_stoch = start_stoch,
                                     time_origin = time_origin,
-                                    seasonality_on = seasonality_on)
+                                    seasonality_on = seasonality_on,
+                                    preyears = preyears)
   # print('model parameter list created')
   # print(mpl_pf$state_check)
   # print(mpl_pf$ssa0)
@@ -143,101 +129,6 @@ test_pf <- function(data_raw,
     season_model <- odin::odin(odin_det)
   }
 
-  ## Transformation function that calculates initial values for stochastic model
-  transform <- function(mpl,season_model){ ## Wraps transformation function in a 'closure' environment so you can pass other parameters that you aren't fitting with the pMCMC
-    function(theta) {
-      ## theta: particle filter parameters that are being fitted (and so are changing at each MCMC step)
-      # print('in transform function')
-      init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
-      EIR_vol <- theta[["EIR_SD"]]
-      mpl <- append(mpl_pf,list(EIR_SD = EIR_vol)) ## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
-
-      ## Run equilibrium function
-      state <- equilibrium_init_create_stripped(init_EIR = init_EIR,
-                                                model_param_list = mpl,
-                                                age_vector = mpl$init_age,
-                                                ft = mpl$prop_treated,
-                                                het_brackets = mpl$het_brackets,
-                                                state_check = mpl$state_check)
-      # print('equilibrium state calculated')
-      # print(state)
-
-      ##run deterministic seasonality model first if seasonality_on == 1
-      if(seasonality_on==1){
-        # print('creating seasonality equilirium')
-        #Keep only necessary parameters
-        state_use <- state[names(state) %in% coef(season_model)$name]
-
-        # create model with initial values
-        mod <- season_model$new(user = state_use, use_dde = TRUE)
-
-        # Define time length of the deterministic model run (preyears = how many years you want the deterministic model to run before the particle filter)
-        # deterministic_stop: defines the day the seasonality model should stop so that
-        #                      the particle filter begins at the right time of year
-        deterministic_stop <- as.integer(difftime(mpl$start_stoch,mpl$time_origin,units="days"))
-        tt <- seq(0, preyears*365+deterministic_stop,length.out=100)
-
-        # run seasonality model
-        mod_run <- mod$run(tt, verbose=FALSE,step_size_max=9)
-
-        # shape output
-        out <- mod$transform_variables(mod_run)
-        # windows(10,8)
-        # plot(out$t,out$prev,type='l')
-        # View(out)
-
-        # Transform seasonality model output to match expected input of the stochastic model
-        init4pmcmc <- transform_init(out)
-        # print(init4pmcmc)
-        # cat('prev equilibrium: ',state_use$prev,'\n')
-        # cat('prev seasonal: ',init4pmcmc$prev,'\n')
-
-        #Print some equilibrium checks if state_check==1
-        if(state_check==1){
-          print('running equilibrium checks')
-          H <- sum(init4pmcmc$init_S) + sum(init4pmcmc$init_T) + sum(init4pmcmc$init_D) + sum(init4pmcmc$init_A) + sum(init4pmcmc$init_U) + sum(init4pmcmc$init_P)
-
-          deriv_S11 <- -init4pmcmc$FOI_eq[1,1]*init4pmcmc$init_S[1,1] + init4pmcmc$rP*init4pmcmc$init_P[1,1] + init4pmcmc$rU*init4pmcmc$init_U[1,1] +
-            init4pmcmc$eta*H*init4pmcmc$het_wt[1] - (init4pmcmc$eta+init4pmcmc$age_rate[1])*init4pmcmc$init_S[1,1]
-          print('Seasonal equilibrium')
-          cat('deriv S check: ',deriv_S11,'\n')
-          b <- init4pmcmc$b0 * ((1-init4pmcmc$b1)/(1+(init4pmcmc$init_IB[1,1]/init4pmcmc$IB0)^init4pmcmc$kB)+init4pmcmc$b1)
-          cat('b check: ',b,'\n')
-          EIR_eq11 <- init4pmcmc$init_EIR/365 * init4pmcmc$rel_foi[1] * init4pmcmc$foi_age[1]
-          FOI_lag <- EIR_eq11 * (if(init4pmcmc$init_IB[1,1]==0) init4pmcmc$b0 else b)
-          deriv_FOI111 <- (init4pmcmc$lag_rates/init4pmcmc$dE)*FOI_lag - (init4pmcmc$lag_rates/init4pmcmc$dE)*init4pmcmc$FOI_eq[1,1]
-          cat('deriv FOI check: ',deriv_FOI111,'\n')
-
-          print('Compare equilibrium state to seasonal equilibrium')
-          print('The following values should be 0 or very close.')
-          cat('S check: ',init4pmcmc$init_S-state$init_S,'\n')
-          cat('T check: ',init4pmcmc$init_T-state$init_T,'\n')
-          cat('D check: ',init4pmcmc$init_D-state$init_D,'\n')
-          cat('A check: ',init4pmcmc$init_A-state$init_A,'\n')
-          cat('U check: ',init4pmcmc$init_U-state$init_U,'\n')
-          cat('P check: ',init4pmcmc$init_P-state$init_P,'\n')
-          cat('Iv check: ',init4pmcmc$init_Iv-state$init_Iv,'\n')
-          cat('init_EIR check: ',state$init_EIR-init4pmcmc$init_EIR,'\n')
-          cat('prev check: ',state$prev-init4pmcmc$prev,'\n')
-
-          print('Helpful values for reference:')
-          cat('init_EIR: ',state$init_EIR,'\n')
-          cat('Equilibrium prev: ',state$prev,'\n')
-          cat('Seasonal equilibrium prev: ',init4pmcmc$prev,'\n')
-          saveRDS(append(mpl,init4pmcmc),'seasonal_equil_values.RDS')
-          saveRDS(state,'original_equil_values.RDS')
-
-          # mpl['init_EIR'] <- NULL
-          # View(init4pmcmc)
-          # View(state_use)
-        }
-        return(append(mpl,init4pmcmc)) #Append all parameters from model parameter list for stochastic model
-      }
-      else{
-        return(state)
-      }
-    }
-  }
 
   ## Load stochastic model in odin.dust
   # print('about to load stochastic model')
@@ -249,13 +140,23 @@ test_pf <- function(data_raw,
 
   set.seed(seed) #To reproduce pMCMC results
 
-  ### Set particle filter
-  # print('about to set up particle filter')
-  pf <- mcstate::particle_filter$new(data, model, n_particles, compare,
-                                     index = index, seed = seed,
-                                     stochastic_schedule = stochastic_schedule,
-                                     ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
-                                     n_threads = n_threads)
+  if(comparison=='u5'){
+    pf <- mcstate::particle_filter$new(data, model, n_particles, compare_u5,
+                                       index = index, seed = seed,
+                                       stochastic_schedule = stochastic_schedule,
+                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                       n_threads = n_threads)
+  }
+  else if(comparison=='pgmg'){
+    mpl_pf <- append(mpl_pf,list(coefs_pg_df = as.data.frame(readRDS('./inst/extdata/pg_corr_sample.RDS')),
+                                 coefs_mg_df = as.data.frame(readRDS('./inst/extdata/mg_corr_sample.RDS'))))
+    pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
+                                       index = index, seed = seed,
+                                       stochastic_schedule = stochastic_schedule,
+                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                       n_threads = n_threads)
+
+  }
   # print('set up particle filter')
    # print('set up particle filter')
 
