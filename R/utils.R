@@ -16,7 +16,7 @@ load_file <- function(name) {
   # check that valid file extension
   ext <- strsplit(name, "\\.")[[1]]
   ext <- ext[length(ext)]
-  if(is.element(ext, c("csv", "rds")) == FALSE){
+  if(is.element(ext, c("csv", "rds", "RDS")) == FALSE){
     stop("file extension not valid")
   }
 
@@ -24,7 +24,7 @@ load_file <- function(name) {
   name_full <- system.file("extdata/", name, package="sifter", mustWork = TRUE)
 
   # read in file
-  if (ext == "rds") {
+  if (ext == "rds" | ext == "RDS") {
     ret <- readRDS(name_full)
   } else {
     ret <-  read.csv(file=name_full, header=TRUE, sep=",")
@@ -351,7 +351,7 @@ transform <- function(mpl_pf,season_model){ ## Wraps transformation function in 
       # deterministic_stop: defines the day the seasonality model should stop so that
       #                      the particle filter begins at the right time of year
       deterministic_stop <- as.integer(difftime(mpl$start_stoch,mpl$time_origin,units="days"))
-      print(mpl$preyears*365+deterministic_stop)
+      # print(mpl$preyears*365+deterministic_stop)
       tt <- seq(0, mpl$preyears*365+deterministic_stop,length.out=100)
 
       # run seasonality model
