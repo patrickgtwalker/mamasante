@@ -3,3 +3,7 @@
 .Rdata
 .httr-oauth
 .DS_Store
+original_equil_values.RDS
+seasonal_equil_values.RDS
+test_script.R
+plot_particle_filter.R

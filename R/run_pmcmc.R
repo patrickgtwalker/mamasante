@@ -153,7 +153,7 @@ run_pmcmc <- function(data_raw=NULL,
   }
   else if(comparison=='pgmg'){
     mpl_pf <- append(mpl_pf,list(coefs_pg_df = as.data.frame(load_file('pg_corr_sample.RDS')),
-                  coefs_mg_df = as.data.frame(load_file('pg_corr_sample.RDS'))))
+                                 coefs_mg_df = as.data.frame(load_file('mg_corr_sample.RDS'))))
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
                                        index = index, seed = seed,
                                        stochastic_schedule = stochastic_schedule,
