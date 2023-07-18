@@ -59,7 +59,7 @@ run_pmcmc <- function(data_raw=NULL,
                       comparison = c('u5','pgmg','pgsg')){
   ##Merge primigrav and multigrav datasets if necessary.
   if(comparison=='pgmg' | comparison=='pgsg'){
-    data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month','t'),suffix = c('.pg','.mg'))
+      data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month'),suffix = c('.pg','.mg'))
   }
 
   ## Modify dates from data
