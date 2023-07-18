@@ -56,11 +56,12 @@ run_pmcmc <- function(data_raw=NULL,
                       seed = 1L,
                       start_pf_time = 30,
                       stoch_param = c('EIR','betaa'),
-                      comparison = c('u5','pgmg')){
+                      comparison = c('u5','pgmg','pgsg')){
   ##Merge primigrav and multigrav datasets if necessary.
-  if(comparison=='pgmg'){
+  if(comparison=='pgmg' | comparison=='pgsg'){
     data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month','t'),suffix = c('.pg','.mg'))
   }
+
   ## Modify dates from data
   # str(data_raw$month)
   # print(data_raw$month)
@@ -154,6 +155,16 @@ run_pmcmc <- function(data_raw=NULL,
   else if(comparison=='pgmg'){
     mpl_pf <- append(mpl_pf,list(coefs_pg_df = as.data.frame(load_file('pg_corr_sample.RDS')),
                                  coefs_mg_df = as.data.frame(load_file('mg_corr_sample.RDS'))))
+    pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
+                                       index = index, seed = seed,
+                                       stochastic_schedule = stochastic_schedule,
+                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                       n_threads = n_threads)
+
+  }
+  else if(comparison=='pgsg'){
+    mpl_pf <- append(mpl_pf,list(coefs_pg_df = as.data.frame(load_file('pg_corr_sample.RDS')),
+                                 coefs_mg_df = as.data.frame(load_file('sg_corr_sample.RDS'))))
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
                                        index = index, seed = seed,
                                        stochastic_schedule = stochastic_schedule,
