@@ -5,7 +5,7 @@
 #' @param data_raw Time series data to fit model
 #' @param n_particles Number of particles to be used in pMCMC (default = 200)
 #' @param proposal_matrix Proposal matrix for MCMC parameters
-#' @param max_EIR Ceiling for proposed EIR values (default = 1000)
+#' @param max_param Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)
 #' @param max_steps Maximum steps for particle filter (default = 1e7)
 #' @param atol atol for particle filter (default = 1e-3)
 #' @param rtol rtol for particle filter (default = 1e-6)
@@ -29,7 +29,7 @@ test_pf <- function(data_raw=NULL,
                     data_raw_mg=NULL,
                     n_particles=200,
                     proposal_matrix,
-                    max_EIR=1000,
+                    max_param=1000,
                     # EIR_vol,
                     # proposal_dist,
                     # init_EIR = 100,
@@ -175,7 +175,7 @@ test_pf <- function(data_raw=NULL,
   # # print('set up pmcmc control')
 
   ### Set pmcmc parameters
-  proposals <- data.frame(EIR_SD = rlnorm(1, meanlog = -.2, sdlog = 0.5),
+  proposals <- data.frame(volatility = rlnorm(1, meanlog = -.2, sdlog = 0.5),
                       log_init_EIR = rnorm(1, mean = 0, sd = 10))
 
   transform_pars <- transform(mpl_pf,season_model)

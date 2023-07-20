@@ -10,9 +10,9 @@ run_pmcmc(
   data_raw_mg = NULL,
   n_particles = 200,
   proposal_matrix,
-  max_EIR = 1000,
+  max_param = 1000,
   max_steps = 1e+07,
-  atol = 0.001,
+  atol = 1e-06,
   rtol = 1e-06,
   n_steps = 500,
   n_threads = 4,
@@ -26,7 +26,7 @@ run_pmcmc(
   seed = 1L,
   start_pf_time = 30,
   stoch_param = c("EIR", "betaa"),
-  comparison = c("u5", "pgmg")
+  comparison = c("u5", "pgmg", "pgsg")
 )
 }
 \arguments{
@@ -36,7 +36,7 @@ run_pmcmc(
 
 \item{proposal_matrix}{Proposal matrix for MCMC parameters}
 
-\item{max_EIR}{Ceiling for proposed EIR values (default = 1000)}
+\item{max_param}{Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)}
 
 \item{max_steps}{Maximum steps for particle filter (default = 1e7)}
 
