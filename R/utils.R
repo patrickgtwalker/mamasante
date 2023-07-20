@@ -196,9 +196,8 @@ transform_init <- function(final_state = NULL){
        kD = f$kD_init[last],
        dE = f$dE_init[last],
        DY = f$DY_init[last],
-       EIR_SD = f$EIR_SD_init[last],
+       volatility = f$volatility_init[last],
        lag_rates = f$lag_rates_init[last],
-       max_EIR = f$max_EIR_init[last],
        Q0 = f$Q0_init[last],
        state_check = f$state_check_init[last],
        tau1 = f$tau1_init[last],
@@ -325,8 +324,8 @@ transform <- function(mpl_pf,season_model){ ## Wraps transformation function in 
     ## theta: particle filter parameters that are being fitted (and so are changing at each MCMC step)
     # print('in transform function')
     init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
-    EIR_vol <- theta[["EIR_SD"]]
-    mpl <- append(mpl_pf,list(EIR_SD = EIR_vol)) ## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
+    vol <- theta[["volatility"]]
+    mpl <- append(mpl_pf,list(volatility = vol)) ## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
 
     ## Run equilibrium function
     state <- equilibrium_init_create_stripped(init_EIR = init_EIR,
@@ -429,8 +428,8 @@ transform <- function(mpl_pf,season_model){ ## Wraps transformation function in 
 #' @export
 check_seasonality <- function(theta,mpl_pf,season_model){
   init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
-  EIR_vol <- theta[["EIR_SD"]]
-  mpl <- append(mpl_pf,list(EIR_SD = EIR_vol)) ## Add MCMC parameters to model parameter list
+  EIR_vol <- theta[["volatility"]]
+  mpl <- append(mpl_pf,list(volatility = EIR_vol)) ## Add MCMC parameters to model parameter list
 
   ## Run equilibrium function
   state <- equilibrium_init_create_stripped(age_vector = mpl$init_age,

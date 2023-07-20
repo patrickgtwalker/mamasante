@@ -5,7 +5,7 @@
 #' @param data_raw Time series data to fit model
 #' @param n_particles Number of particles to be used in pMCMC (default = 200)
 #' @param proposal_matrix Proposal matrix for MCMC parameters
-#' @param max_EIR Ceiling for proposed EIR values (default = 1000)
+#' @param max_param Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)
 #' @param max_steps Maximum steps for particle filter (default = 1e7)
 #' @param atol atol for particle filter (default = 1e-3)
 #' @param rtol rtol for particle filter (default = 1e-6)
@@ -33,7 +33,7 @@ run_pmcmc <- function(data_raw=NULL,
                       data_raw_mg=NULL,
                       n_particles=200,
                       proposal_matrix,
-                      max_EIR=1000,
+                      max_param=1000,
                       # EIR_vol,
                       # proposal_dist,
                       # init_EIR = 100,
@@ -115,7 +115,7 @@ run_pmcmc <- function(data_raw=NULL,
   mpl_pf <- model_param_list_create(init_age = init_age,
                                     prop_treated = prop_treated,
                                     het_brackets = het_brackets,
-                                    max_EIR = max_EIR,
+                                    max_param = max_param,
                                     state_check = state_check,
                                     lag_rates = lag_rates,
                                     country = country,
@@ -191,12 +191,12 @@ run_pmcmc <- function(data_raw=NULL,
   # print('set up pmcmc control')
 
   ### Set pmcmc parameters
-  EIR_SD <- mcstate::pmcmc_parameter("EIR_SD", 0.3, min = 0,max=2.5,
+  volatility <- mcstate::pmcmc_parameter("volatility", 0.3, min = 0,max=2.5,
                                      prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
   log_init_EIR <- mcstate::pmcmc_parameter("log_init_EIR", 1.5, min = -8.5, max = 8.5,
                                            prior = function(p) dnorm(p, mean = 0, sd = 10, log = TRUE) + p) #Add p to adjust for sampling on log scale
 
-  pars = list(EIR_SD = EIR_SD, log_init_EIR = log_init_EIR) ## Put pmcmc parameters into a list
+  pars = list(volatility = volatility, log_init_EIR = log_init_EIR) ## Put pmcmc parameters into a list
 
   mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
                                              proposal_matrix,

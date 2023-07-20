@@ -4,10 +4,12 @@
 \alias{ll_binom}
 \title{Binomial function that checks for NAs}
 \usage{
-ll_binom(obs, model)
+ll_binom(positive, tested, model)
 }
 \arguments{
-\item{obs}{Observed data. Default = NULL}
+\item{positive}{Observed number of positive tests. Default = NULL}
+
+\item{tested}{Observed number of tests. Default = NULL}
 
 \item{model}{Output from model.  Default = NULL}
 }

@@ -252,7 +252,7 @@ Q0 <- user() # proportion of anthropophagy
 av <- fv*Q0
 
 DY<-user()
-EIR_SD<-user()
+volatility<-user()
 # init_EIR <- user()
 # max_EIR <- user()
 # EIR[,] <- exp(log_EIR) * rel_foi[j] * foi_age[i]
@@ -361,8 +361,9 @@ incv <- ince_delay[lag_ratesMos]*lag_ratesMos/delayMos *surv
 state_check <- user()
 betaa_eq <- user()
 initial(betaa_td) <- betaa_eq
-betaa_max <- log(30)
-betaa_update <- if(state_check==0) min(log(betaa_td)+rnorm(0,1)*EIR_SD,betaa_max) else log(betaa_eq)
+max_param <- user()
+betaa_max <- log(max_param)
+betaa_update <- if(state_check==0) min(log(betaa_td)+rnorm(0,1)*volatility,betaa_max) else log(betaa_eq)
 update(betaa_td) <- exp(betaa_update)
 output(betaa_out) <- betaa_td
 

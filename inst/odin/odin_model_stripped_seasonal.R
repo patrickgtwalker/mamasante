@@ -526,12 +526,10 @@ output(ID0_init) <- ID0
 output(kD_init) <- kD
 output(dE_init) <- dE
 output(DY_init) <- DY
-EIR_SD <- user()
-output(EIR_SD_init) <- EIR_SD
+volatility <- user()
+output(volatility_init) <- volatility
 lag_rates <- user()
 output(lag_rates_init) <- lag_rates
-max_EIR <- user()
-output(max_EIR_init) <- max_EIR
 output(Q0_init) <- Q0
 output(state_check_init) <- state_check
 output(tau1_init) <- tau1

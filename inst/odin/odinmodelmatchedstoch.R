@@ -253,15 +253,16 @@ fv <- 1/( tau1 + tau2 ) # mosquito feeding rate (zbar from intervention param.)
 av <- fv*Q0
 
 DY<-user()
-EIR_SD<-user()
+volatility<-user()
 init_EIR <- user()
-max_EIR <- user()
 state_check <- user()
 initial(log_EIR) <- log(init_EIR/DY)
-# update(log_EIR) <- min(log_EIR+rnorm(0,1)*EIR_SD,log(max_EIR/DY))
-eir_update <- if(state_check==0) min(log_EIR+rnorm(0,1)*EIR_SD,log(max_EIR/DY)) else log(init_EIR/DY)
+# update(log_EIR) <- min(log_EIR+rnorm(0,1)*volatility,log(max_EIR/DY))
+max_param <- user()
+max_EIR <- log(max_param/DY)
+eir_update <- if(state_check==0) min(log_EIR+rnorm(0,1)*volatility,max_EIR) else log(init_EIR/DY)
 update(log_EIR) <- eir_update
-EIR[,] <- exp(log_EIR) * rel_foi[j] * foi_age[i] 
+EIR[,] <- exp(log_EIR) * rel_foi[j] * foi_age[i]
 output(EIR_out) <- exp(log_EIR)*DY
 
 #EIR_td<-interpolate(EIR_times, EIR_valsd, "constant")
