@@ -11,6 +11,8 @@
 #' @param rtol rtol for particle filter (default = 1e-6)
 #' @param n_steps Number of MCMC steps in a single chain (default = 500)
 #' @param n_threads Number of processing threads (default = 4)
+#' @param n_chains Number of chains (default = 1)
+#' @param n_workers Number of workers (default = 4)
 #' @param lag_rates Number of delay compartments (default = 10)
 #' @param state_check Run equilibrium checks, if state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
 #'                    If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
@@ -42,6 +44,8 @@ run_pmcmc <- function(data_raw=NULL,
                       rtol = 1e-6,
                       n_steps = 500,
                       n_threads = 4,
+                      n_chains = 1,
+                      n_workers = 1,
                       lag_rates = 10,
                       state_check = 0,## Run equilibrium checks
                       # If state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
@@ -142,8 +146,11 @@ run_pmcmc <- function(data_raw=NULL,
   odin_stoch <- system.file("odin", stoch_file, package = "sifter")
   model <- odin.dust::odin_dust(odin_stoch)
   # print('loaded stochastic model')
+  # print(model$public_methods$has_openmp())
+  if(!model$public_methods$has_openmp()) warning('openmp must be enabled to run particle filter in parallel')
 
   set.seed(seed) #To reproduce pMCMC results
+  n_threads <- dust::dust_openmp_threads(n_threads, action = "fix")
 
   if(comparison=='u5'){
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_u5,
@@ -183,8 +190,8 @@ run_pmcmc <- function(data_raw=NULL,
     save_state = TRUE,
     save_trajectories = TRUE,
     progress = TRUE,
-    n_chains = 1, #TO DO: Make parameter to easily change
-    n_workers = 1, #TO DO: Make parameter to easily change
+    n_chains = n_chains, #TO DO: Make parameter to easily change
+    n_workers = n_workers, #TO DO: Make parameter to easily change
     n_threads_total = n_threads,
     rerun_every = 50, #Re-runs particle filter about every 50 steps (random distribution, mean=50)
     rerun_random = TRUE)
@@ -208,6 +215,8 @@ run_pmcmc <- function(data_raw=NULL,
   pmcmc_run <- mcstate::pmcmc(mcmc_pars, pf, control = control)
   run_time <- difftime(Sys.time(),start.time,units = 'secs')
   print(run_time)
+
+  # if(n_chains > 1) pmcmc_run <- mcstate::pmcmc_combine(pmcmc_run)
 
   pars <- pmcmc_run$pars
   probs <- pmcmc_run$probabilities

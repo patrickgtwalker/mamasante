@@ -16,6 +16,8 @@ run_pmcmc(
   rtol = 1e-06,
   n_steps = 500,
   n_threads = 4,
+  n_chains = 1,
+  n_workers = 1,
   lag_rates = 10,
   state_check = 0,
   country = NULL,
@@ -47,6 +49,10 @@ run_pmcmc(
 \item{n_steps}{Number of MCMC steps in a single chain (default = 500)}
 
 \item{n_threads}{Number of processing threads (default = 4)}
+
+\item{n_chains}{Number of chains (default = 1)}
+
+\item{n_workers}{Number of workers (default = 4)}
 
 \item{lag_rates}{Number of delay compartments (default = 10)}
 
