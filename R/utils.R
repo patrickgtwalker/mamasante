@@ -288,13 +288,13 @@ compare_pgmg <- function(state, observed, pars = NULL) {
 
   logodds_child <- log(get_odds_from_prev(state[1,]))
 
-  likelihood_pg <- as.data.frame(sapply(1:nrow(pars$coefs_pg_df), function(x){
+  likelihood_pg <- as.data.frame(parallel::mclapply(1:nrow(pars$coefs_pg_df), function(x){
     prev_preg <- get_prev_from_log_odds(logodds_child+pars$coefs_pg_df$gradient[x]*(logodds_child-pars$coefs_pg_df$av_lo_child[x])+pars$coefs_pg_df$intercept[x])
     ll_binom(positive = observed$positive.pg,
              tested = observed$tested.pg,
              model = prev_preg)
   }))
-  likelihood_mg <- as.data.frame(sapply(1:nrow(pars$coefs_mg_df), function(x){
+  likelihood_mg <- as.data.frame(parallel::mclapply(1:nrow(pars$coefs_mg_df), function(x){
     prev_preg <- get_prev_from_log_odds(logodds_child+pars$coefs_mg_df$gradient[x]*(logodds_child-pars$coefs_mg_df$av_lo_child[x])+pars$coefs_mg_df$intercept[x])
     ll_binom(positive = observed$positive.mg,
              tested = observed$tested.mg,

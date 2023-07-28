@@ -65,6 +65,7 @@ run_pmcmc <- function(data_raw=NULL,
   if(comparison=='pgmg' | comparison=='pgsg'){
       data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month'),suffix = c('.pg','.mg'))
   }
+  Sys.setenv("MC_CORES"=n_threads)
 
   ## Modify dates from data
   # str(data_raw$month)
@@ -151,7 +152,6 @@ run_pmcmc <- function(data_raw=NULL,
 
   set.seed(seed) #To reproduce pMCMC results
   n_threads <- dust::dust_openmp_threads(n_threads, action = "fix")
-
   if(comparison=='u5'){
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_u5,
                                        index = index, seed = seed,
@@ -227,7 +227,7 @@ run_pmcmc <- function(data_raw=NULL,
   if(seasonality_on==1 & seasonality_check==1){
     print('Saving seasonality equilibrium trajectories')
     # Create list of seasonality trajectories for each set of sampled parameters in the posterior
-    seas_pretime <- lapply(1:nrow(pars), function(x) check_seasonality(theta=pars[x,],mpl_pf=mpl_pf,season_model=season_model))
+    seas_pretime <- parallel::mclapply(1:nrow(pars), function(x) check_seasonality(theta=pars[x,],mpl_pf=mpl_pf,season_model=season_model))
   }
   to_return <- list(threads = n_threads,
                     particles = n_particles,
