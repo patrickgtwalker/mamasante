@@ -306,12 +306,12 @@ equilibrium_init_create_stripped <- function(age_vector, het_brackets,
               age = age_vector*mpl$DY, ft = ft,
               age20l = age20l, age20u = age20u, age_20_factor = age_20_factor
               ##extras for checking:
-              ##,ssa0 = mpl$ssa0, ssa1 = mpl$ssa1,ssa2 = mpl$ssa2, ssa3 = mpl$ssa3, ssb1 = mpl$ssb1, ssb2 = mpl$ssb2, ssb3 = mpl$ssb3,theta_c = mpl$theta_c,
-              ##init_Y = Y_eq, init_ICM = ICM_eq,IC_20=IC_20,age_width = age_width,
-              ##het_x = het_x,K0 = K0,cA_eq = cA_eq,
-              ##betaS = betaS, betaA = betaA, betaU = betaU,FOIvij_eq=FOIvij_eq,
-              ##age_mid_point = age_mid_point, het_bounds = het_bounds,
-              ##p_det_eq = p_det_eq, b_eq = b, phi_eq = phi
+              # ,ssa0 = mpl$ssa0, ssa1 = mpl$ssa1,ssa2 = mpl$ssa2, ssa3 = mpl$ssa3, ssb1 = mpl$ssb1, ssb2 = mpl$ssb2, ssb3 = mpl$ssb3,theta_c = mpl$theta_c,
+              # init_Y = Y_eq, init_ICM = ICM_eq,IC_20=IC_20,age_width = age_width,
+              # het_x = het_x,K0 = K0,cA_eq = cA_eq,
+              # betaS = betaS, betaA = betaA, betaU = betaU,FOIvij_eq=FOIvij_eq,
+              # age_mid_point = age_mid_point, het_bounds = het_bounds,
+              # p_det_eq = p_det_eq, b_eq = b, phi_eq = phi
 
 
               )
