@@ -79,8 +79,8 @@ run_pmcmc <- function(data_raw=NULL,
   #Create daily sequence from initial_time to end of observations
   #This is so the trajector histories return daily values (otherwise it returns
   #model values only at the dates of observation)
-  time_list <- data.frame(t=initial_time:max(data_raw_time$t))
-  data_raw_time <- dplyr::left_join(time_list,data_raw_time,by='t')
+  # time_list <- data.frame(t=initial_time:max(data_raw_time$t))
+  # data_raw_time <- dplyr::left_join(time_list,data_raw_time,by='t')
   start_stoch <- zoo::as.Date(start_obs - start_pf_time) #Start of stochastic schedule; needs to start when particle filter starts
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
   # print('Data processed')
