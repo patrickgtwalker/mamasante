@@ -110,7 +110,7 @@ test_pf <- function(data_raw=NULL,
   mpl_pf <- model_param_list_create(init_age = init_age,
                                     prop_treated = prop_treated,
                                     het_brackets = het_brackets,
-                                    max_EIR = max_EIR,
+                                    max_param = max_param,
                                     state_check = state_check,
                                     lag_rates = lag_rates,
                                     country = country,
@@ -153,7 +153,7 @@ test_pf <- function(data_raw=NULL,
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
                                        index = index, seed = seed,
                                        stochastic_schedule = stochastic_schedule,
-                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol, debug_record_step_times=TRUE),
                                        n_threads = n_threads)
 
   }
@@ -187,7 +187,7 @@ test_pf <- function(data_raw=NULL,
     equil <- transform_pars(proposal[x,])
     pf$run(pars=equil,save_history = TRUE)
   # Our simulated trajectories, with the "real" data superimposed
-  pf$history()
+    return(list(history=pf$history(),stats=pf$ode_statistics()))
   },proposal=proposals)
   # start.time <- Sys.time()
   # pmcmc_run <- mcstate::pmcmc(mcmc_pars, pf, control = control)
