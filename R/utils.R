@@ -235,15 +235,15 @@ transform_init <- function(final_state = NULL){
 #'
 #' @export
 ll_binom <- function(positive, tested, model) {
-  if (is.na(positive)) {
-    # Creates vector of NAs in ll with same length, if no data
-    ll_obs <- rep(NA,length(model))
-  } else {
+  # if (is.na(positive)) {
+  #   # Creates vector of NAs in ll with same length, if no data
+  #   ll_obs <- rep(NA,length(model))
+  # } else {
     ll_obs <- dbinom(x = positive,
                      size = tested,
                      prob = model,
                      log = FALSE)
-  }
+  # }
   ll_obs
 }
 
@@ -262,7 +262,7 @@ ll_binom <- function(positive, tested, model) {
 compare_u5 <- function(state, observed, pars = NULL) {
   # print('in compare function')
   #skip comparison if data is missing
-  if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
+  # if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
   ll <- ll_binom(positive=observed$positive,
                  tested=observed$tested,
                  model=state[1,])
@@ -423,7 +423,10 @@ transform <- function(init_state){ ## Wraps transformation function in a 'closur
     # print('in transform function')
     # init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
     vol <- theta[["volatility"]]
-    mpl <- append(mpl_pf,list(volatility = vol))
+    print(init_state$betaa_eq)
+    init_state$betaa_eq <- theta[["init_betaa"]]
+    print(init_state$betaa_eq)
+    init_state <- append(init_state,list(volatility = vol))
     state <- append(init_state,list(volatility = vol))## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
     return(state)
   }
