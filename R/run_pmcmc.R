@@ -33,6 +33,7 @@
 run_pmcmc <- function(data_raw=NULL,
                       data_raw_pg=NULL,
                       data_raw_mg=NULL,
+                      init_EIR = 10,
                       n_particles=200,
                       proposal_matrix,
                       max_param=1000,
@@ -200,14 +201,14 @@ run_pmcmc <- function(data_raw=NULL,
   ### Set pmcmc parameters
   volatility <- mcstate::pmcmc_parameter("volatility", 0.3, min = 0,max=2.5,
                                      prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
-  log_init_EIR <- mcstate::pmcmc_parameter("log_init_EIR", 1.5, min = -8.5, max = 8.5,
-                                           prior = function(p) dnorm(p, mean = 0, sd = 10, log = TRUE) + p) #Add p to adjust for sampling on log scale
 
-  pars = list(volatility = volatility, log_init_EIR = log_init_EIR) ## Put pmcmc parameters into a list
+  pars = list(volatility = volatility) ## Put pmcmc parameters into a list
+
+  init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,season_model=season_model)
 
   mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
                                              proposal_matrix,
-                                             transform = transform(mpl_pf,season_model)) ## Calls transformation function based on pmcmc parameters
+                                             transform = transform(init_state)) ## Calls transformation function based on pmcmc parameters
   # print('parameters set')
   # print('starting pmcmc run')
   ### Run pMCMC
