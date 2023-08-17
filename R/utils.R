@@ -423,9 +423,9 @@ transform <- function(init_state){ ## Wraps transformation function in a 'closur
     # print('in transform function')
     # init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
     vol <- theta[["volatility"]]
-    print(init_state$betaa_eq)
+    # print(init_state$betaa_eq)
     init_state$betaa_eq <- theta[["init_betaa"]]
-    print(init_state$betaa_eq)
+    # print(init_state$betaa_eq)
     init_state <- append(init_state,list(volatility = vol))
     state <- append(init_state,list(volatility = vol))## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
     return(state)
