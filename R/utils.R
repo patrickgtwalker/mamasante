@@ -262,12 +262,12 @@ ll_binom <- function(positive, tested, model) {
 compare_u5 <- function(state, observed, pars = NULL) {
   # print('in compare function')
   #skip comparison if data is missing
-  # if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
-  ll <- ll_binom(positive=observed$positive,
-                 tested=observed$tested,
-                 model=state[1,])
+  if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
+  dbinom(x = observed$positive,
+         size = observed$tested,
+         prob = state[1,],
+         log = TRUE)
   # print(ll)
-  return(ll)
 }
 #------------------------------------------------
 #' Compare function to calculate likelihood

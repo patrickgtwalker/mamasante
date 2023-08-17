@@ -83,6 +83,7 @@ run_pmcmc <- function(data_raw=NULL,
   # time_list <- data.frame(t=initial_time:max(data_raw_time$t))
   # data_raw_time <- dplyr::left_join(time_list,data_raw_time,by='t')
   start_stoch <- zoo::as.Date(start_obs - start_pf_time) #Start of stochastic schedule; needs to start when particle filter starts
+  data_raw_time <- plyr::rbind.fill(data.frame(t=initial_time),data_raw_time)
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
   # print('Data processed')
 
