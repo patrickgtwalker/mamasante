@@ -223,7 +223,7 @@ run_pmcmc <- function(data_raw=NULL,
   init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
 
   ### Set pmcmc parameters
-  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,max=2.5,
+  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, #min = 0,max=2.5,
                                          prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
   volatility <- mcstate::pmcmc_parameter("volatility", 0.3, min = 0,max=2.5,
                                      prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
