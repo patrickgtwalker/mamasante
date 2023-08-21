@@ -196,7 +196,6 @@ transform_init <- function(final_state = NULL){
        kD = f$kD_init[last],
        dE = f$dE_init[last],
        DY = f$DY_init[last],
-       volatility = f$volatility_init[last],
        lag_rates = f$lag_rates_init[last],
        Q0 = f$Q0_init[last],
        state_check = f$state_check_init[last],
@@ -318,7 +317,14 @@ compare_pgmg <- function(state, observed, pars = NULL) {
 #'    model. Default = NULL
 #'
 #' @export
-initialise <- function(init_EIR,mpl,season_model){
+initialise <- function(init_EIR,mpl,det_model){
+  EIR_vals <- NULL
+  EIR_times <- NULL
+  if(is.data.frame(init_EIR)){
+    EIR_vals <- init_EIR$EIR
+    EIR_times <- init_EIR$time
+    init_EIR <- EIR_vals[1]
+  }
   ## Run equilibrium function
   state <- equilibrium_init_create_stripped(init_EIR = init_EIR,
                                             model_param_list = mpl,
@@ -326,17 +332,17 @@ initialise <- function(init_EIR,mpl,season_model){
                                             ft = mpl$prop_treated,
                                             het_brackets = mpl$het_brackets,
                                             state_check = mpl$state_check)
+  state <- append(state,list(EIR_times=EIR_times,EIR_vals=EIR_vals))
   # print('equilibrium state calculated')
   # print(state)
 
   ##run deterministic seasonality model first if seasonality_on == 1
-  if(mpl$seasonality_on==1){
+  if(!is.null(det_model)){
     # print('creating seasonality equilirium')
     #Keep only necessary parameters
-    state_use <- state[names(state) %in% coef(season_model)$name]
-
+    state_use <- state[names(state) %in% coef(det_model)$name]
     # create model with initial values
-    mod <- season_model$new(user = state_use, use_dde = TRUE)
+    mod <- det_model$new(user = state_use, use_dde = TRUE)
 
     # Define time length of the deterministic model run (preyears = how many years you want the deterministic model to run before the particle filter)
     # deterministic_stop: defines the day the seasonality model should stop so that
@@ -344,7 +350,7 @@ initialise <- function(init_EIR,mpl,season_model){
     deterministic_stop <- as.integer(difftime(mpl$start_stoch,mpl$time_origin,units="days"))
     # print(mpl$preyears*365+deterministic_stop)
     tt <- seq(0, mpl$preyears*365+deterministic_stop,length.out=100)
-
+    cat('pre-model time:\n',tt,'\n')
     # run seasonality model
     mod_run <- mod$run(tt, verbose=FALSE,step_size_max=9)
 
@@ -422,13 +428,11 @@ transform <- function(init_state){ ## Wraps transformation function in a 'closur
     ## theta: particle filter parameters that are being fitted (and so are changing at each MCMC step)
     # print('in transform function')
     # init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
-    vol <- theta[["volatility"]]
+    init_state$volatility <- theta[["volatility"]]
     # print(init_state$betaa_eq)
     init_state$betaa_eq <- theta[["init_betaa"]]
     # print(init_state$betaa_eq)
-    init_state <- append(init_state,list(volatility = vol))
-    state <- append(init_state,list(volatility = vol))## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
-    return(state)
+    return(init_state)
   }
 }
 #------------------------------------------------

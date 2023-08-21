@@ -26,7 +26,6 @@ rT <- user() # rate of treatment working: T -> P
 rD <- user() #  rate from D -> A
 rU <- user() # rate of clearance of subpatent infection U -> S
 rP <- user() # rate at which prophylaxis wears off P -> S
-DY <- user()
 
 # S - SUSCEPTIBLE
 init_S[,] <- user()
@@ -100,10 +99,10 @@ Y[1:na, 1:nh] <- S[i,j]+A[i,j]+U[i,j]
 # The number of new cases at this timestep
 dim(clin_inc) <- c(na,nh)
 clin_inc[1:na, 1:nh] <- phi[i,j]*FOI[i,j]*Y[i,j]
-#output(clin_inc)<-clin_inc
-#output(phi)<-phi
-#output(FOI)<-FOI
-#output(Y)<-Y
+output(clin_inc)<-clin_inc
+output(phi)<-phi
+output(FOI)<-FOI
+output(Y)<-Y
 # Sum compartments over all age, heterogeneity and intervention categories
 Sh <- sum(S[,])
 Th <- sum(T[,])
@@ -215,30 +214,38 @@ dim(p_det) <- c(na,nh)
 p_det[,] <- d1 + (1-d1)/(1 + fd[i]*(ID[i,j]/ID0)^kD)
 
 # Force of infection, depends on level of infection blocking immunity
-dim(FOI_lag) <- c(na,nh)
-FOI_lag[1:na, 1:nh] <- EIR[i,j] * (if(IB[i,j]==0) b0 else b[i,j])
+#dim(FOI_lag) <- c(na,nh)
+#FOI_lag[1:na, 1:nh] <- EIR[i,j] * (if(IB[i,j]==0) b0 else b[i,j])
 
 # Current FOI depends on humans that have been through the latent period
 dE <- user() # latent period of human infection.
 dim(FOI) <- c(na,nh)
-# FOI[,] <- EIR[i,j] * (if(IB[i,j]==0) b0 else b[i,j])
+FOI[,] <- EIR[i,j] * (if(IB[i,j]==0) b0 else b[i,j])
 
-FOI[,] <- delay(FOI_lag[i,j],dE)
-
+#FOI[,] <- delay(FOI_lag[i,j],dE)
 
 # EIR -rate at which each age/het/int group is bitten
 # rate for age group * rate for biting category * FOI for age group * prop of
 # infectious mosquitoes
+DY<-user()
+
+
+EIR_td<-interpolate(EIR_times, EIR_valsd, "constant")
+EIR_times[]<-user()
+EIR_vals[]<-user()
+EIR_valsd[]<-EIR_vals[i]/DY
+dim(EIR_times)<-user()
+dim(EIR_vals)<-user()
+dim(EIR_valsd)<-length(EIR_vals)
 dim(foi_age) <- na
 foi_age[] <- user()
 dim(rel_foi) <- nh
 rel_foi[] <- user()
 dim(EIR) <- c(na,nh)
-omega <- user()
-EIR[,] <- av * rel_foi[j] * foi_age[i] * Iv/omega
-# #output(Ivout) <- Iv
+EIR[,] <- EIR_td*rel_foi[j] * foi_age[i]
+#output(Ivout) <- Iv
 
-# #output(omega) <- omega
+#output(omega) <- omega
 ##------------------------------------------------------------------------------
 ##########################
 ## SEASONALITY FUNCTION ##
@@ -249,19 +256,18 @@ EIR[,] <- av * rel_foi[j] * foi_age[i] * Iv/omega
 pi <- user() # weird quirk, need to pass pi
 
 # The parameters for the fourier series
-ssa0 <- user()
-ssa1 <- user()
-ssa2 <- user()
-ssa3 <- user()
-ssb1 <- user()
-ssb2 <- user()
-ssb3 <- user()
-theta_c <- user()
+#ssa0 <- user()
+#ssa1 <- user()
+#ssa2 <- user()
+#ssa3 <- user()
+#ssb1 <- user()
+#ssb2 <- user()
+#ssb3 <- user()
+#theta_c <- user()
 # Recreation of the rainfall function
-state_check <- user()
-theta2 <- if(state_check == 1 || (ssa0 == 0 && ssa1  == 0 && ssa2  == 0 && ssb1  == 0 && ssb2  == 0 && ssb3  == 0 && theta_c  == 0))
-1 else max((ssa0+ssa1*cos(2*pi*t/365)+ssa2*cos(2*2*pi*t/365)+ssa3*cos(3*2*pi*t/365)+ssb1*sin(2*pi*t/365)+ssb2*sin(2*2*pi*t/365)+ ssb3*sin(3*2*pi*t/365) ) /theta_c,0.001)
-# theta2 <-1.0
+#theta2 <- if(ssa0 == 0 && ssa1  == 0 && ssa2  == 0 && ssb1  == 0 && ssb2  == 0 && ssb3  == 0 && theta_c  == 0)
+# 1 else max((ssa0+ssa1*cos(2*pi*t/365)+ssa2*cos(2*2*pi*t/365)+ssa3*cos(3*2*pi*t/365)+ssb1*sin(2*pi*t/365)+ssb2*sin(2*2*pi*t/365)+ ssb3*sin(3*2*pi*t/365) ) /theta_c,0.001)
+theta2 <-1
 ##------------------------------------------------------------------------------
 #####################
 ## MOSQUITO STATES ##
@@ -295,8 +301,8 @@ cA[,] <- cU + (cD-cU)*p_det[i,j]^gamma1
 
 # Force of infection from humans to mosquitoes
 dim(FOIvij) <- c(na,nh)
-# <- user() #normalising constant for biting rates
-FOIvij[1:na, 1:nh] <- (cT*T[i,j] + cD*D[i,j] + cA[i,j]*A[i,j] + cU*U[i,j]) * rel_foi[j] *av*foi_age[i]/omega
+omega <- user() #normalising constant for biting rates
+FOIvij[1:na, 1:nh] <- (cT*T[i,j] + cD*D[i,j] + cA[i,j]*A[i,j] + cU*U[i,j]) *av* rel_foi[j] *foi_age[i]/omega
 lag_FOIv=sum(FOIvij)
 
 # Current hum->mos FOI depends on the number of individuals now producing gametocytes (12 day lag)
@@ -312,7 +318,7 @@ incv <- delay(lag_incv, delayMos)
 # incv <- lag_incv
 
 # Number of mosquitoes born (depends on PL, number of larvae), or is constant outside of seasonality
-# betaa <- 0.5*PL/dPL
+#betaa <- 0.5*PL/dPL
 betaa <- mv0 * mu0 * theta2
 
 deriv(Sv) <- -ince - mu*Sv + betaa
@@ -396,12 +402,12 @@ deriv(PL) <- LL/dLL - muPL*PL - PL/dPL
 ##------------------------------------------------------------------------------
 
 # Outputs for each compartment across the sum across all ages, biting heterogeneities and intervention categories
-#output(Sout) <- sum(S[,])
-#output(Tout) <- sum(T[,])
-#output(Dout) <- sum(D[,])
-#output(Aout) <- sum(A[,])
-#output(Uout) <- sum(U[,])
-#output(Pout) <- sum(P[,])
+output(Sout) <- sum(S[,])
+output(Tout) <- sum(T[,])
+output(Dout) <- sum(D[,])
+output(Aout) <- sum(A[,])
+output(Uout) <- sum(U[,])
+output(Pout) <- sum(P[,])
 
 # Outputs for clinical incidence and prevalence on a given day
 # population densities for each age category
@@ -414,7 +420,7 @@ age05 <- user(integer=TRUE)
 dim(prev0to59) <- c(age59,nh)
 prev0to59[1:age59,] <- T[i,j] + D[i,j]  + A[i,j]*p_det[i,j]
 output(prev) <- sum(prev0to59[,])/sum(den[1:age59])
-#output(age59)<-age59
+output(age59)<-age59
 
 dim(prevall) <- c(na,nh)
 prevall[,] <- T[i,j] + D[i,j]  + A[i,j]*p_det[i,j]
@@ -423,7 +429,7 @@ output(prev_all) <- sum(prevall[,])/sum(den[])
 # clinical incidence
 dim(clin_inc0tounder5) <- c(age59,nh)
 clin_inc0tounder5[1:age59,] <- clin_inc[i,j]
-#output(incunder5) <- sum(clin_inc0tounder5)/sum(den[1:age59])
+output(incunder5) <- sum(clin_inc0tounder5)/sum(den[1:age59])
 
 dim(clin_inc0to5) <- c(age05,nh)
 clin_inc0to5[1:age05,] <- clin_inc[i,j]
@@ -433,12 +439,7 @@ output(inc) <- sum(clin_inc[,])
 
 EIR_agg[,] <- EIR[i,j]* DY /(rel_foi[j] * foi_age[i])
 dim(EIR_agg) <- c(na,nh)
-# Param checking outputs
-#output(mu) <- mu
-#output(beta_larval) <- beta_larval
-#output(KL) <- KL
-#output(mv) <- mv
-#output(K0) <- K0
+
 
 ##Output for initial state of stochastic model
 output(FOIvij_init[,]) <- FOIvij[i,j]
@@ -529,7 +530,7 @@ output(DY_init) <- DY
 lag_rates <- user()
 output(lag_rates_init) <- lag_rates
 output(Q0_init) <- Q0
-output(state_check_init) <- state_check
+# output(state_check_init) <- state_check
 output(tau1_init) <- tau1
 output(tau2_init) <- tau2
 output(betaa_eq) <- betaa

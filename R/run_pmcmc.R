@@ -4,6 +4,9 @@
 #'
 #' @param data_raw Time series data to fit model
 #' @param n_particles Number of particles to be used in pMCMC (default = 200)
+#' @param init_EIR A single value or a dataframe with two columns (time and EIR)
+#'                  to specify historical malaria transmission levels before
+#'                  data collection began.
 #' @param proposal_matrix Proposal matrix for MCMC parameters
 #' @param max_param Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)
 #' @param max_steps Maximum steps for particle filter (default = 1e7)
@@ -72,20 +75,31 @@ run_pmcmc <- function(data_raw=NULL,
   # str(data_raw$month)
   # print(data_raw$month)
   start_obs <- min(zoo::as.Date(zoo::as.yearmon(data_raw$month)))#Month of first observation (in Date format)
+  # cat('start_obs: ',as.character(start_obs),'\n')
   time_origin <- zoo::as.Date(paste0(lubridate::year(start_obs)-1,'-01-01')) #January 1 of year before observation (in Date format)
+  # cat('time_origin: ',as.character(time_origin),'\n')
   data_raw_time <- data_raw
   data_raw_time$date <- zoo::as.Date(zoo::as.yearmon(data_raw$month), frac = 0.5) #Convert dates to middle of month
   data_raw_time$t <- as.integer(difftime(data_raw_time$date,time_origin,units="days")) #Calculate date as number of days since January 1 of year before observation
+  # cat('First observed time: ',min(data_raw_time$t),'\n')
   initial_time <- min(data_raw_time$t) - start_pf_time #Start particle filter a given time (default = 30d) before first observation
+  # cat('initial_time: ',initial_time,'\n')
   #Create daily sequence from initial_time to end of observations
   #This is so the trajector histories return daily values (otherwise it returns
   #model values only at the dates of observation)
   # time_list <- data.frame(t=initial_time:max(data_raw_time$t))
   # data_raw_time <- dplyr::left_join(time_list,data_raw_time,by='t')
-  start_stoch <- zoo::as.Date(start_obs - start_pf_time) #Start of stochastic schedule; needs to start when particle filter starts
+  start_stoch <- zoo::as.Date(min(data_raw_time$date) - start_pf_time) #Start of stochastic schedule; needs to start when particle filter starts
+  # cat('start_stoch: ',as.character(start_stoch),'\n')
   data_raw_time <- plyr::rbind.fill(data.frame(t=initial_time),data_raw_time)
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
   # print('Data processed')
+  ## Provide schedule for changes in stochastic process (in this case EIR)
+  ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
+  stoch_update_dates <- seq.Date(start_stoch,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month')
+  stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
+  # cat('stochastic_schedule:\n',stochastic_schedule,'\n')
+  # print('stochastic_schedule assigned')
 
   ##Output from particle filter
   ##    run: output used for likelihood calculation
@@ -107,11 +121,6 @@ run_pmcmc <- function(data_raw=NULL,
                    spz_rate = info$index$spz_rate))
   }
 
-  ## Provide schedule for changes in stochastic process (in this case EIR)
-  ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
-  stoch_update_dates <- seq.Date(start_stoch,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month')
-  stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
-  # print('stochastic_schedule assigned')
 
   #Provide age categories, proportion treated, and number of heterogeneity brackets
   init_age <- c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80)
@@ -136,9 +145,20 @@ run_pmcmc <- function(data_raw=NULL,
   # print(mpl_pf$ssa0)
 
   ## If a deterministic seasonal model is needed prior to the stochastic model, this loads the deterministic odin model
-  if(seasonality_on == 1){
+  det_model <- NULL
+  if(seasonality_on == 1 & !is.data.frame(init_EIR)){
     odin_det <- system.file("odin", "odin_model_stripped_seasonal.R", package = "sifter")
-    season_model <- odin::odin(odin_det)
+    det_model <- odin::odin(odin_det)
+  } else if(seasonality_on == 0 & is.data.frame(init_EIR)){
+    odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
+    det_model <- odin::odin(odin_det)
+  } else if(seasonality_on==1 & is.data.frame(init_EIR)){
+    #### NEED TO MAKE MODEL FILE #####
+    print('A seasonal, piecewise historical initialisation is not yet available.')
+    print('Setting a seasonal iniatilisation with the last EIR value provided.')
+    odin_det <- system.file("odin", "odin_model_stripped_seasonal.R", package = "sifter")
+    det_model <- odin::odin(odin_det)
+    init_EIR = init_EIR$EIR[nrow(init_EIR)]
   }
 
 
@@ -200,7 +220,7 @@ run_pmcmc <- function(data_raw=NULL,
   # print('set up pmcmc control')
 
   ## Set initial state based on a user-given equilibrium EIR
-  init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,season_model=season_model)
+  init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
 
   ### Set pmcmc parameters
   init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,max=2.5,
@@ -233,7 +253,7 @@ run_pmcmc <- function(data_raw=NULL,
   if(seasonality_on==1 & seasonality_check==1){
     print('Saving seasonality equilibrium trajectories')
     # Create list of seasonality trajectories for each set of sampled parameters in the posterior
-    seas_pretime <- parallel::mclapply(1:nrow(pars), function(x) check_seasonality(theta=pars[x,],mpl_pf=mpl_pf,season_model=season_model))
+    seas_pretime <- parallel::mclapply(1:nrow(pars), function(x) check_seasonality(theta=pars[x,],mpl_pf=mpl_pf,det_model=det_model))
   }
   to_return <- list(threads = n_threads,
                     particles = n_particles,
