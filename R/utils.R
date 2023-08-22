@@ -260,13 +260,18 @@ ll_binom <- function(positive, tested, model) {
 #' @export
 compare_u5 <- function(state, observed, pars = NULL) {
   # print('in compare function')
+  # cat('Observed positive:\n',observed$positive,'\n')
+  # cat('Observed tested:\n',observed$tested,'\n')
+  # cat('Estimated prevalence:\n',state[1,],'\n')
   #skip comparison if data is missing
-  if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
-  dbinom(x = observed$positive,
+  if(is.na(observed$positive)) {
+    return(numeric(length(state[1,])))}
+  ll <- dbinom(x = observed$positive,
          size = observed$tested,
          prob = state[1,],
          log = TRUE)
   # print(ll)
+  return(ll)
 }
 #------------------------------------------------
 #' Compare function to calculate likelihood
@@ -321,9 +326,14 @@ initialise <- function(init_EIR,mpl,det_model){
   EIR_vals <- NULL
   EIR_times <- NULL
   if(is.data.frame(init_EIR)){
+    # print('Input EIR: ')
+    # print(init_EIR)
     EIR_vals <- init_EIR$EIR
     EIR_times <- init_EIR$time
     init_EIR <- EIR_vals[1]
+    # print('Output EIR: ')
+    # print(EIR_vals)
+    # cat('New initial EIR: ',init_EIR,'\n')
   }
   ## Run equilibrium function
   state <- equilibrium_init_create_stripped(init_EIR = init_EIR,
@@ -350,7 +360,7 @@ initialise <- function(init_EIR,mpl,det_model){
     deterministic_stop <- as.integer(difftime(mpl$start_stoch,mpl$time_origin,units="days"))
     # print(mpl$preyears*365+deterministic_stop)
     tt <- seq(0, mpl$preyears*365+deterministic_stop,length.out=100)
-    cat('pre-model time:\n',tt,'\n')
+    # cat('pre-model time:\n',tt,'\n')
     # run seasonality model
     mod_run <- mod$run(tt, verbose=FALSE,step_size_max=9)
 
@@ -358,6 +368,15 @@ initialise <- function(init_EIR,mpl,det_model){
     out <- mod$transform_variables(mod_run)
     # windows(10,8)
     # plot(out$t,out$prev,type='l')
+    # windows(10,8)
+    # plot(out$t,out$mv_init,type='l')
+    # windows(10,8)
+    # plot(out$t,out$betaa_eq,type='l')
+    # windows(10,8)
+    # plot(out$t,out$theta2_eq,type='l')
+    # windows(10,8)
+    # plot(out$t,out$lag_seas_eq,type='l')
+
     # View(out)
 
     # Transform seasonality model output to match expected input of the stochastic model

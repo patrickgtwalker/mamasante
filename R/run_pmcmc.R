@@ -153,12 +153,11 @@ run_pmcmc <- function(data_raw=NULL,
     odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
     det_model <- odin::odin(odin_det)
   } else if(seasonality_on==1 & is.data.frame(init_EIR)){
-    #### NEED TO MAKE MODEL FILE #####
-    print('A seasonal, piecewise historical initialisation is not yet available.')
-    print('Setting a seasonal iniatilisation with the last EIR value provided.')
-    odin_det <- system.file("odin", "odin_model_stripped_seasonal.R", package = "sifter")
+    # print('A seasonal, piecewise historical initialisation is not yet available.')
+    # print('Setting a seasonal iniatilisation with the last EIR value provided.')
+    odin_det <- system.file("odin", "odin_model_stripped_piecewise_seas.R", package = "sifter")
     det_model <- odin::odin(odin_det)
-    init_EIR = init_EIR$EIR[nrow(init_EIR)]
+    # init_EIR = init_EIR$EIR[nrow(init_EIR)]
   }
 
 
