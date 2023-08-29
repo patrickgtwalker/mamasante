@@ -384,7 +384,6 @@ initialise <- function(init_EIR,mpl,det_model){
     # print(init4pmcmc)
     # cat('prev equilibrium: ',state_use$prev,'\n')
     # cat('prev seasonal: ',init4pmcmc$prev,'\n')
-
     #Print some equilibrium checks if state_check==1
     if(mpl$state_check==1){
       print('running equilibrium checks')
@@ -450,6 +449,11 @@ transform <- function(init_state){ ## Wraps transformation function in a 'closur
     init_state$volatility <- theta[["volatility"]]
     # print(init_state$betaa_eq)
     init_state$betaa_eq <- theta[["init_betaa"]]
+
+    if(init4pmcmc$tuning) {
+      init4pmcmc$fixed_betaa <- init_state$betaa_eq
+      init4pmcmc$fixed_vol <- 1
+    }
     # print(init_state$betaa_eq)
     return(init_state)
   }
@@ -522,4 +526,39 @@ get_prev_from_log_odds<-function(log_odds){
 #' @export
 get_odds_from_prev<-function(prev){
   return(prev/(1-prev))
+}
+#------------------------------------------------
+#' Tunes the number of particles needed for the particle filter
+#'
+#' \code{tune_particles} Tunes the number of particles needed for the particle filter
+#'
+#' @param prev A probability or prevalence value. Must be between 0 and 1.
+#'
+#' @export
+tune_particles<-function(mcmc_pars,pf,control){
+  min <- 2
+  max <- 1024
+  test <- union(min * 2**(seq(0, floor(log2(max / min)))), max)
+  found_good <- FALSE
+  id <- 0
+  while (!found_good && (id + 1) < length(test)) {
+    id <- id + 1
+    pmcmc_run <- mcstate::pmcmc(mcmc_pars, pf, control = control)
+    var_loglik <- stats::var(pmcmc_run$probs$log_likelihood)
+    if (is.na(var_loglik)) var_loglik <- 0
+
+    message(
+      date(), " ", test[id], " particles, loglikelihod variance: ",
+      var_loglik
+    )
+
+    if (var_loglik < target_variance) {
+      ## choose smallest var-loglikelihood < target_variance
+      found_good <- TRUE
+    }
+  }
+  if (!found_good) id <- length(test) #Take largest number of particles if still not hitting variance target
+  n_particles <- test[id]
+
+  return(n_particles)
 }

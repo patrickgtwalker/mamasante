@@ -139,7 +139,8 @@ run_pmcmc <- function(data_raw=NULL,
                                     start_stoch = start_stoch,
                                     time_origin = time_origin,
                                     seasonality_on = seasonality_on,
-                                    preyears = preyears)
+                                    preyears = preyears,
+                                    particle_tune = particle_tune)
   # print('model parameter list created')
   # print(mpl_pf$state_check)
   # print(mpl_pf$ssa0)
