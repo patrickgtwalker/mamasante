@@ -128,7 +128,7 @@ run_pmcmc <- function(data_raw=NULL,
   het_brackets <- 5
 
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
-  mpl_pf <- model_param_list_create(init_age = init_age,
+  mpl_pf <- sifter::model_param_list_create(init_age = init_age,
                                     prop_treated = prop_treated,
                                     het_brackets = het_brackets,
                                     max_param = max_param,
@@ -222,10 +222,10 @@ run_pmcmc <- function(data_raw=NULL,
   init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
 
   ### Set pmcmc parameters
-  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, #min = 0,max=2.5,
-                                         prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
-  volatility <- mcstate::pmcmc_parameter("volatility", 0.3, min = 0,max=2.5,
-                                     prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
+  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
+                                         prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
+  volatility <- mcstate::pmcmc_parameter("volatility", rgamma(1,shape = 3.4, rate = 3.1), min = 0,
+                                     prior = function(p) dgamma(p, shape = 3.4, rate = 3.1, log = TRUE))
 
   pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
 
