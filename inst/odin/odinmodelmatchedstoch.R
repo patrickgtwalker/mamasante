@@ -33,9 +33,9 @@ dim(init_S) <- c(na,nh)
 initial(S[,]) <- init_S[i,j]
 dim(S) <- c(na,nh)
 
-deriv(S[1, 1:nh]) <- -FOI[i,j,lag_rates]*S[i,j] + rP*P[i,j] + rU*U[i,j] +
+deriv(S[1, 1:nh]) <- -FOI_eff[i,j]*S[i,j] + rP*P[i,j] + rU*U[i,j] +
   eta*H*het_wt[j] - (eta+age_rate[i])*S[i,j]
-deriv(S[2:na, 1:nh]) <- -FOI[i,j,lag_rates]*S[i,j] + rP*P[i,j] + rU*U[i,j] -
+deriv(S[2:na, 1:nh]) <- -FOI_eff[i,j]*S[i,j] + rP*P[i,j] + rU*U[i,j] -
   (eta+age_rate[i])*S[i,j] + age_rate[i-1]*S[i-1,j]
 
 # T- SUCCESSFULLY TREATED
@@ -66,9 +66,9 @@ dim(init_A) <- c(na,nh)
 initial(A[,]) <- init_A[i,j]
 dim(A) <- c(na,nh)
 
-deriv(A[1, 1:nh]) <- (1-phi[i,j])*FOI[i,j,lag_rates]*Y[i,j] - FOI[i,j,lag_rates]*A[i,j] +
+deriv(A[1, 1:nh]) <- (1-phi[i,j])*FOI_eff[i,j]*Y[i,j] - FOI_eff[i,j]*A[i,j] +
   rD*D[i,j] - rA*A[i,j] - (eta+age_rate[i])*A[i,j]
-deriv(A[2:na, 1:nh]) <- (1-phi[i,j])*FOI[i,j,lag_rates]*Y[i,j] - FOI[i,j,lag_rates]*A[i,j] +
+deriv(A[2:na, 1:nh]) <- (1-phi[i,j])*FOI_eff[i,j]*Y[i,j] - FOI_eff[i,j]*A[i,j] +
   rD*D[i,j] - rA*A[i,j] - (eta+age_rate[i])*A[i,j] + age_rate[i-1]*A[i-1,j]
 
 # U - SUBPATENT DISEASE
@@ -77,9 +77,9 @@ dim(init_U) <- c(na,nh)
 initial(U[,]) <- init_U[i,j]
 dim(U) <- c(na,nh)
 
-deriv(U[1, 1:nh]) <- rA*A[i,j] - FOI[i,j,lag_rates]*U[i,j] - rU*U[i,j] -
+deriv(U[1, 1:nh]) <- rA*A[i,j] - FOI_eff[i,j]*U[i,j] - rU*U[i,j] -
   (eta+age_rate[i])*U[i,j]
-deriv(U[2:na, 1:nh]) <- rA*A[i,j] - FOI[i,j,lag_rates]*U[i,j] - rU*U[i,j] -
+deriv(U[2:na, 1:nh]) <- rA*A[i,j] - FOI_eff[i,j]*U[i,j] - rU*U[i,j] -
   (eta+age_rate[i])*U[i,j] + age_rate[i-1]*U[i-1,j]
 
 # P - PROPHYLAXIS
@@ -98,7 +98,7 @@ Y[1:na, 1:nh] <- S[i,j]+A[i,j]+U[i,j]
 
 # The number of new cases at this timestep
 dim(clin_inc) <- c(na,nh)
-clin_inc[1:na, 1:nh] <- phi[i,j]*FOI[i,j,lag_rates]*Y[i,j]
+clin_inc[1:na, 1:nh] <- phi[i,j]*FOI_eff[i,j]*Y[i,j]
 output(clin_inc)<-clin_inc
 output(phi)<-phi
 # output(FOI)<-FOI
@@ -155,8 +155,8 @@ dim(init_ICA) <- c(na,nh)
 initial(ICA[,]) <- init_ICA[i,j]
 dim(ICA) <- c(na,nh)
 
-deriv(ICA[1, 1:nh]) <- FOI[i,j,lag_rates]/(FOI[i,j,lag_rates] * uCA + 1) - 1/dCA*ICA[i,j] -ICA[i,j]/x_I[i]
-deriv(ICA[2:na, 1:nh]) <- FOI[i,j,lag_rates]/(FOI[i,j,lag_rates] * uCA + 1) - 1/dCA*ICA[i,j] - (ICA[i,j]-ICA[i-1,j])/x_I[i]
+deriv(ICA[1, 1:nh]) <- FOI_eff[i,j]/(FOI_eff[i,j] * uCA + 1) - 1/dCA*ICA[i,j] -ICA[i,j]/x_I[i]
+deriv(ICA[2:na, 1:nh]) <- FOI_eff[i,j]/(FOI_eff[i,j] * uCA + 1) - 1/dCA*ICA[i,j] - (ICA[i,j]-ICA[i-1,j])/x_I[i]
 
 # clinical immunity is a combination of maternal and exposure-driven immunity
 dim(IC) <- c(na,nh)
@@ -199,8 +199,8 @@ dim(init_ID) <- c(na,nh)
 initial(ID[,]) <- init_ID[i,j]
 dim(ID) <- c(na,nh)
 
-deriv(ID[1, 1:nh]) <- FOI[i,j,lag_rates]/(FOI[i,j,lag_rates]*uD + 1) - ID[i,j]/dID - ID[i,j]/x_I[i]
-deriv(ID[2:na, 1:nh]) <- FOI[i,j,lag_rates]/(FOI[i,j,lag_rates]*uD + 1) - ID[i,j]/dID - (ID[i,j]-ID[i-1,j])/x_I[i]
+deriv(ID[1, 1:nh]) <- FOI_eff[i,j]/(FOI_eff[i,j]*uD + 1) - ID[i,j]/dID - ID[i,j]/x_I[i]
+deriv(ID[2:na, 1:nh]) <- FOI_eff[i,j]/(FOI_eff[i,j]*uD + 1) - ID[i,j]/dID - (ID[i,j]-ID[i-1,j])/x_I[i]
 
 # p_det - probability of detection by microscopy, immunity decreases chances of
 # infection because it pushes parasite density down
@@ -242,6 +242,9 @@ dim(FOI) <- c(na,nh,lag_rates)
 
 deriv(FOI[,,1]) <- (lag_rates/dE)*FOI_lag[i,j] - (lag_rates/dE)*FOI[i,j,1]
 deriv(FOI[,,2:lag_rates]) <- (lag_rates/dE)*FOI[i,j,k-1] - (lag_rates/dE)*FOI[i,j,k]
+
+dim(FOI_eff) <- c(na,nh)
+FOI_eff[,] <- FOI[i,j,lag_rates]
 
 # EIR -rate at which each age/het/int group is bitten
 # rate for age group * rate for biting category * FOI for age group * prop of
