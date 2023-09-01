@@ -302,6 +302,21 @@ model_param_list_create <- function(
     mp_list$theta_c <- admin_units_seasonal$theta_c[admin_matches]
   }
 
+  ## Gravidity prevalence conversion coefficients:
+  coefs_pg_df = apply(load_file('pg_corr_sample.RDS'),2,median)
+  mp_list$gradient_pg <- coefs_pg_df[['gradient']]
+  mp_list$av_lo_child_pg <- coefs_pg_df[['av_lo_child']]
+  mp_list$intercept_pg <- coefs_pg_df[['intercept']]
+
+  coefs_sg_df = apply(load_file('sg_corr_sample.RDS'),2,median)
+  mp_list$gradient_sg <- coefs_sg_df[['gradient']]
+  mp_list$av_lo_child_sg <- coefs_sg_df[['av_lo_child']]
+  mp_list$intercept_sg <- coefs_sg_df[['intercept']]
+
+  coefs_mg_df = apply(load_file('mg_corr_sample.RDS'),2,median)
+  mp_list$gradient_mg <- coefs_mg_df[['gradient']]
+  mp_list$av_lo_child_mg <- coefs_mg_df[['av_lo_child']]
+  mp_list$intercept_mg <- coefs_mg_df[['intercept']]
   # # Fertility parameters
   # #Gravidity inputs
   # MZ_multi_rates <- readRDS('MiP-given/MZ_multi_rates.rds')
