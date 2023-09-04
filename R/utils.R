@@ -538,5 +538,5 @@ get_init_EIR <- function(par,mpl){
                                                     init_EIR = init_EIR,
                                                     model_param_list = mpl)
 
-  return((equil$prev05 - mpl$target_prev)^2)
+  return((equil$prev2.10 - mpl$target_prev)^2)
 }

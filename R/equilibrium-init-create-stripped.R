@@ -73,6 +73,8 @@ equilibrium_init_create_stripped <- function(age_vector, het_brackets,
 
   age59 <- which(age_vector * 12 > 59)[1] - 1  # index of age vector before age is >59 months
   age05 <- which(age_vector > 5)[1] - 1  # index of age vector before age is 5 years
+  age02 <- which(age_vector > 2)[1] - 1  # index of age vector before age is 5 years
+  age10 <- which(age_vector > 10)[1] - 1  # index of age vector before age is 5 years
 
   ## force of infection
   foi_age <- c()
@@ -241,6 +243,7 @@ equilibrium_init_create_stripped <- function(age_vector, het_brackets,
     }
   }
   prev <- sum(prev_eq[1:age59,])/sum(den[1:age59])
+  prev2.10 <- sum(prev_eq[age02:age10,])/sum(den[age02:age10])
   # print(FOIvij_eq)
   # mosquito states
   FOIv_eq <- sum(FOIvij_eq)
@@ -303,6 +306,7 @@ equilibrium_init_create_stripped <- function(age_vector, het_brackets,
               den = den, age59 = age59, age05 = age05,
               pi = pi,
               prev05 = prev,inc = inc, inc05=inc05,
+              prev2.10 = prev2.10,
               age = age_vector*mpl$DY, ft = ft,
               age20l = age20l, age20u = age20u, age_20_factor = age_20_factor
               ##extras for checking:
