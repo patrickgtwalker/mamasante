@@ -8,6 +8,8 @@ run_pmcmc(
   data_raw = NULL,
   data_raw_pg = NULL,
   data_raw_mg = NULL,
+  init_EIR = 10,
+  target_prev = NULL,
   n_particles = 200,
   proposal_matrix,
   max_param = 1000,
@@ -33,6 +35,13 @@ run_pmcmc(
 }
 \arguments{
 \item{data_raw}{Time series data to fit model}
+
+\item{init_EIR}{A single value or a dataframe with two columns (time and EIR)
+to specify historical malaria transmission levels before
+data collection began.}
+
+\item{target_prev}{Return an initial EIR value (from the equilibrium solution),
+given a target prevalence in under 5yos}
 
 \item{n_particles}{Number of particles to be used in pMCMC (default = 200)}
 

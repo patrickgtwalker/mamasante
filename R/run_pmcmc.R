@@ -7,6 +7,8 @@
 #' @param init_EIR A single value or a dataframe with two columns (time and EIR)
 #'                  to specify historical malaria transmission levels before
 #'                  data collection began.
+#' @param target_prev Return an initial EIR value (from the equilibrium solution),
+#'                    given a target prevalence in under 5yos
 #' @param proposal_matrix Proposal matrix for MCMC parameters
 #' @param max_param Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)
 #' @param max_steps Maximum steps for particle filter (default = 1e7)
@@ -37,6 +39,7 @@ run_pmcmc <- function(data_raw=NULL,
                       data_raw_pg=NULL,
                       data_raw_mg=NULL,
                       init_EIR = 10,
+                      target_prev=NULL,
                       n_particles=200,
                       proposal_matrix,
                       max_param=1000,
@@ -89,37 +92,17 @@ run_pmcmc <- function(data_raw=NULL,
   #model values only at the dates of observation)
   # time_list <- data.frame(t=initial_time:max(data_raw_time$t))
   # data_raw_time <- dplyr::left_join(time_list,data_raw_time,by='t')
-  start_stoch <- zoo::as.Date(min(data_raw_time$date) - start_pf_time) #Start of stochastic schedule; needs to start when particle filter starts
+  start_stoch <- lubridate::floor_date(zoo::as.Date(min(data_raw_time$date) - start_pf_time), unit='month') #Start of stochastic schedule; needs to start when particle filter starts
   # cat('start_stoch: ',as.character(start_stoch),'\n')
   # data_raw_time <- plyr::rbind.fill(data.frame(t=initial_time),data_raw_time)
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
   # print('Data processed')
   ## Provide schedule for changes in stochastic process (in this case EIR)
   ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
-  stoch_update_dates <- seq.Date(start_stoch,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month')
+  stoch_update_dates <- c(start_stoch,seq.Date(start_obs,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month'))
   stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
   # cat('stochastic_schedule:\n',stochastic_schedule,'\n')
   # print('stochastic_schedule assigned')
-
-  ##Output from particle filter
-  ##    run: output used for likelihood calculation
-  ##    state: output used for visualization
-  index <- function(info) {
-    list(run = c(prev = info$index$prev),
-         state = c(prev_05 = info$index$prev,
-                   EIR = info$index$EIR_out,
-                   betaa = info$index$betaa_out,
-                   clininc_all = info$index$inc,
-                   prev_all = info$index$prevall,
-                   clininc_05 = info$index$inc05,
-                   Dout = info$index$Dout,
-                   Aout = info$index$Aout,
-                   Uout = info$index$Uout,
-                   p_det_out = info$index$p_det_out,
-                   phi_out = info$index$phi_out,
-                   b_out = info$index$b_out,
-                   spz_rate = info$index$spz_rate))
-  }
 
 
   #Provide age categories, proportion treated, and number of heterogeneity brackets
@@ -128,10 +111,11 @@ run_pmcmc <- function(data_raw=NULL,
   het_brackets <- 5
 
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
-  mpl_pf <- model_param_list_create(init_age = init_age,
+  mpl_pf <- sifter::model_param_list_create(init_age = init_age,
                                     prop_treated = prop_treated,
                                     het_brackets = het_brackets,
                                     max_param = max_param,
+                                    target_prev = target_prev,
                                     state_check = state_check,
                                     lag_rates = lag_rates,
                                     country = country,
@@ -175,6 +159,25 @@ run_pmcmc <- function(data_raw=NULL,
   set.seed(seed) #To reproduce pMCMC results
   n_threads <- dust::dust_openmp_threads(n_threads, action = "fix")
   if(comparison=='u5'){
+    ##Output from particle filter
+    ##    run: output used for likelihood calculation
+    ##    state: output used for visualization
+    index <- function(info) {
+      list(run = c(prev = info$index$prev),
+           state = c(prev_05 = info$index$prev,
+                     EIR = info$index$EIR_out,
+                     betaa = info$index$betaa_out,
+                     clininc_all = info$index$inc,
+                     prev_all = info$index$prevall,
+                     clininc_05 = info$index$inc05,
+                     Dout = info$index$Dout,
+                     Aout = info$index$Aout,
+                     Uout = info$index$Uout,
+                     p_det_out = info$index$p_det_out,
+                     phi_out = info$index$phi_out,
+                     b_out = info$index$b_out,
+                     spz_rate = info$index$spz_rate))
+    }
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_u5,
                                        index = index, seed = seed,
                                        stochastic_schedule = stochastic_schedule,
@@ -182,8 +185,28 @@ run_pmcmc <- function(data_raw=NULL,
                                        n_threads = n_threads)
   }
   else if(comparison=='pgmg'){
-    mpl_pf <- append(mpl_pf,list(coefs_pg_df = as.data.frame(load_file('pg_corr_sample.RDS')),
-                                 coefs_mg_df = as.data.frame(load_file('mg_corr_sample.RDS'))))
+    ##Output from particle filter
+    ##    run: output used for likelihood calculation
+    ##    state: output used for visualization
+    index <- function(info) {
+      list(run = c(prev_pg = info$index$prev_preg_pg,
+                   prev_mg = info$index$prev_preg_mg),
+           state = c(prev_05 = info$index$prev,
+                     prev_pg = info$index$prev_preg_pg,
+                     prev_mg = info$index$prev_preg_mg,
+                     EIR = info$index$EIR_out,
+                     betaa = info$index$betaa_out,
+                     clininc_all = info$index$inc,
+                     prev_all = info$index$prevall,
+                     clininc_05 = info$index$inc05,
+                     Dout = info$index$Dout,
+                     Aout = info$index$Aout,
+                     Uout = info$index$Uout,
+                     p_det_out = info$index$p_det_out,
+                     phi_out = info$index$phi_out,
+                     b_out = info$index$b_out,
+                     spz_rate = info$index$spz_rate))
+    }
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
                                        index = index, seed = seed,
                                        stochastic_schedule = stochastic_schedule,
@@ -192,8 +215,25 @@ run_pmcmc <- function(data_raw=NULL,
 
   }
   else if(comparison=='pgsg'){
-    mpl_pf <- append(mpl_pf,list(coefs_pg_df = as.data.frame(load_file('pg_corr_sample.RDS')),
-                                 coefs_mg_df = as.data.frame(load_file('sg_corr_sample.RDS'))))
+    index <- function(info) {
+      list(run = c(prev_pg = info$index$prev_preg_pg,
+                   prev_mg = info$index$prev_preg_sg),
+           state = c(prev_05 = info$index$prev,
+                     prev_pg = info$index$prev_preg_pg,
+                     prev_sg = info$index$prev_preg_sg,
+                     EIR = info$index$EIR_out,
+                     betaa = info$index$betaa_out,
+                     clininc_all = info$index$inc,
+                     prev_all = info$index$prevall,
+                     clininc_05 = info$index$inc05,
+                     Dout = info$index$Dout,
+                     Aout = info$index$Aout,
+                     Uout = info$index$Uout,
+                     p_det_out = info$index$p_det_out,
+                     phi_out = info$index$phi_out,
+                     b_out = info$index$b_out,
+                     spz_rate = info$index$spz_rate))
+    }
     pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
                                        index = index, seed = seed,
                                        stochastic_schedule = stochastic_schedule,
@@ -223,10 +263,10 @@ run_pmcmc <- function(data_raw=NULL,
   init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
 
   ### Set pmcmc parameters
-  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, #min = 0,max=2.5,
-                                         prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
-  volatility <- mcstate::pmcmc_parameter("volatility", 0.3, min = 0,max=2.5,
-                                     prior = function(p) dlnorm(p, meanlog = -.2, sdlog = 0.5, log = TRUE))
+  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
+                                         prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
+  volatility <- mcstate::pmcmc_parameter("volatility", rgamma(1,shape = 3.4, rate = 3.1), min = 0,
+                                     prior = function(p) dgamma(p, shape = 3.4, rate = 3.1, log = TRUE))
 
   pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
 

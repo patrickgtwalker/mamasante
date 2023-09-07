@@ -290,24 +290,16 @@ compare_pgmg <- function(state, observed, pars = NULL) {
   #skip comparison if data is missing
   if(is.na(observed$positive.pg)&is.na(observed$positive.mg)) {return(numeric(length(state[1,])))}
 
-  logodds_child <- log(get_odds_from_prev(state[1,]))
+  ll_pg <- dbinom(x = observed$positive.pg,
+                          size = observed$tested.pg,
+                          prob = state['prev_pg',],
+                          log = TRUE)
 
-  likelihood_pg <- as.data.frame(parallel::mclapply(1:nrow(pars$coefs_pg_df), function(x){
-    prev_preg <- get_prev_from_log_odds(logodds_child+pars$coefs_pg_df$gradient[x]*(logodds_child-pars$coefs_pg_df$av_lo_child[x])+pars$coefs_pg_df$intercept[x])
-    ll_binom(positive = observed$positive.pg,
-             tested = observed$tested.pg,
-             model = prev_preg)
-  }))
-  likelihood_mg <- as.data.frame(parallel::mclapply(1:nrow(pars$coefs_mg_df), function(x){
-    prev_preg <- get_prev_from_log_odds(logodds_child+pars$coefs_mg_df$gradient[x]*(logodds_child-pars$coefs_mg_df$av_lo_child[x])+pars$coefs_mg_df$intercept[x])
-    ll_binom(positive = observed$positive.mg,
-             tested = observed$tested.mg,
-             model = prev_preg)
-  }))
-  av_likelihood_pg <- rowMeans(likelihood_pg,na.rm=TRUE)
-  av_likelihood_mg <- rowMeans(likelihood_mg,na.rm=TRUE)
-  ll_pg <- ifelse(is.na(av_likelihood_pg),0,log(av_likelihood_pg))
-  ll_mg <- ifelse(is.na(av_likelihood_mg),0,log(av_likelihood_mg))
+  ll_mg <- dbinom(x = observed$positive.mg,
+                          size = observed$tested.mg,
+                          prob = state['prev_mg',],
+                          log = TRUE)
+
   return(ll_pg+ll_mg)
 }
 #------------------------------------------------
@@ -334,6 +326,11 @@ initialise <- function(init_EIR,mpl,det_model){
     # print('Output EIR: ')
     # print(EIR_vals)
     # cat('New initial EIR: ',init_EIR,'\n')
+  }
+  if(!is.null(mpl$target_prev)){
+    print('Optimizing initial EIR based on target prevalence.')
+    opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR,mpl=mpl,method='Brent',lower=0,upper=2000)
+    init_EIR <- opt_EIR$par
   }
   ## Run equilibrium function
   state <- equilibrium_init_create_stripped(init_EIR = init_EIR,
@@ -561,4 +558,23 @@ tune_particles<-function(mcmc_pars,pf,control){
   n_particles <- test[id]
 
   return(n_particles)
+}
+#' Return an initial EIR based on a user-given target prevalence in <5 yead old children
+#'
+#' \code{get_init_EIR} Return an initial EIR based on a user-given target prevalence in <5 yead old children
+#'
+#' @param par An initial EIR value from optim function
+#' @param mpl Model parameter list
+#'
+#' @export
+get_init_EIR <- function(par,mpl){
+  init_EIR <- par[1]
+  print(init_EIR)
+  equil <- sifter::equilibrium_init_create_stripped(age_vector = mpl$init_age,
+                                                    ft = mpl$prop_treated,
+                                                    het_brackets = mpl$het_brackets,
+                                                    init_EIR = init_EIR,
+                                                    model_param_list = mpl)
+
+  return((equil$prev2.10 - mpl$target_prev)^2)
 }
