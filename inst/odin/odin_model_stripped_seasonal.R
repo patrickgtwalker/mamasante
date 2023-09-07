@@ -526,8 +526,6 @@ output(ID0_init) <- ID0
 output(kD_init) <- kD
 output(dE_init) <- dE
 output(DY_init) <- DY
-volatility <- user()
-output(volatility_init) <- volatility
 lag_rates <- user()
 output(lag_rates_init) <- lag_rates
 output(Q0_init) <- Q0
