@@ -29,6 +29,7 @@ run_pmcmc(
   seasonality_check = 0,
   seed = 1L,
   start_pf_time = 30,
+  particle_tune = FALSE,
   stoch_param = c("EIR", "betaa"),
   comparison = c("u5", "pgmg", "pgsg")
 )
@@ -82,6 +83,8 @@ If state_check = 0, no values are printed}
 \item{seed}{Allows user to specify a seed (default = 1L)}
 
 \item{start_pf_time}{Number of days before first observation that particle filter will start (default = 30)}
+
+\item{particle_tune}{Logical to determine if tuning the number of particles should be performed.}
 
 \item{stoch_param}{The parameters which will stochastically update over the time series, 'EIR' or 'betaa'.}
 

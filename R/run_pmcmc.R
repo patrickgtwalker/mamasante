@@ -29,6 +29,7 @@
 #' @param seasonality_check Toggle saving values of seasonality equilibrium (default = 1)
 #' @param seed Allows user to specify a seed (default = 1L)
 #' @param start_pf_time Number of days before first observation that particle filter will start (default = 30)
+#' @param particle_tune Logical to determine if tuning the number of particles should be performed.
 #' @param stoch_param The parameters which will stochastically update over the time series, 'EIR' or 'betaa'.
 #' @param comparison The comparison function to be used. Either 'u5' which
 #'          equates the observed prevalence to prevalence under 5 years old in
@@ -66,6 +67,7 @@ run_pmcmc <- function(data_raw=NULL,
                       seasonality_check = 0,##If 1, saves values of seasonality equilibrium
                       seed = 1L,
                       start_pf_time = 30,
+                      particle_tune = FALSE,
                       stoch_param = c('EIR','betaa'),
                       comparison = c('u5','pgmg','pgsg')){
   ##Merge primigrav and multigrav datasets if necessary.
@@ -156,7 +158,22 @@ run_pmcmc <- function(data_raw=NULL,
   # print(model$public_methods$has_openmp())
   if(!model$public_methods$has_openmp()) warning('openmp must be enabled to run particle filter in parallel')
 
-  set.seed(seed) #To reproduce pMCMC results
+  ## Set initial state based on a user-given equilibrium EIR
+  init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
+
+  ### Set pmcmc parameters
+  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
+                                         prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
+  volatility <- mcstate::pmcmc_parameter("volatility", rgamma(1,shape = 3.4, rate = 3.1), min = 0,
+                                         prior = function(p) dgamma(p, shape = 3.4, rate = 3.1, log = TRUE))
+
+  pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
+
+
+  mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
+                                             proposal_matrix,
+                                             transform = transform(init_state)) ## Calls transformation function based on pmcmc parameters
+
   n_threads <- dust::dust_openmp_threads(n_threads, action = "fix")
   if(comparison=='u5'){
     ##Output from particle filter
@@ -178,12 +195,8 @@ run_pmcmc <- function(data_raw=NULL,
                      b_out = info$index$b_out,
                      spz_rate = info$index$spz_rate))
     }
-    pf <- mcstate::particle_filter$new(data, model, n_particles, compare_u5,
-                                       index = index, seed = seed,
-                                       stochastic_schedule = stochastic_schedule,
-                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
-                                       n_threads = n_threads)
-  }
+    compare_funct <- compare_u5
+ }
   else if(comparison=='pgmg'){
     ##Output from particle filter
     ##    run: output used for likelihood calculation
@@ -207,11 +220,7 @@ run_pmcmc <- function(data_raw=NULL,
                      b_out = info$index$b_out,
                      spz_rate = info$index$spz_rate))
     }
-    pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
-                                       index = index, seed = seed,
-                                       stochastic_schedule = stochastic_schedule,
-                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
-                                       n_threads = n_threads)
+    compare_funct <- compare_pgmg
 
   }
   else if(comparison=='pgsg'){
@@ -234,16 +243,68 @@ run_pmcmc <- function(data_raw=NULL,
                      b_out = info$index$b_out,
                      spz_rate = info$index$spz_rate))
     }
-    pf <- mcstate::particle_filter$new(data, model, n_particles, compare_pgmg,
-                                       index = index, seed = seed,
-                                       stochastic_schedule = stochastic_schedule,
-                                       ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
-                                       n_threads = n_threads)
-
+    compare_funct <- compare_pgmg
   }
+
+  ##Tune particles
+  if(particle_tune){
+    control_tune <- mcstate::pmcmc_control(
+      n_steps=100,
+      save_state = FALSE,
+      save_trajectories = FALSE,
+      progress = TRUE,
+      n_chains = n_chains, #TO DO: Make parameter to easily change
+      n_workers = n_workers, #TO DO: Make parameter to easily change
+      n_threads_total = n_threads,
+      rerun_every = 1,
+      rerun_random = FALSE)
+
+    min <- 10
+    max <- 200
+    test <- union(min * 2**(seq(0, floor(log2(max / min)))), max)
+    found_good <- FALSE
+    id <- 0
+    target_variance <- 1
+
+    while (!found_good && (id + 1) < length(test)) {
+      id <- id + 1
+      pf_tune <- mcstate::particle_filter$new(data, model, n_particles=test[id], compare_funct,
+                                                    index = index,
+                                                    stochastic_schedule = stochastic_schedule,
+                                                    ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                                    n_threads = n_threads)
+      pmcmc_run <- mcstate::pmcmc(mcmc_pars, pf_tune, control = control_tune)
+
+      var_loglik <- stats::var(pmcmc_run$probabilities[,'log_likelihood'])
+      print(pmcmc_run$probabilities)
+      print(pmcmc_run$probabilities[,'log_likelihood'])
+      print(var_loglik)
+      if (is.na(var_loglik)) var_loglik <- 0
+
+      message(
+        date(), " ", test[id], " particles, loglikelihod variance: ",
+        var_loglik
+      )
+
+      if (var_loglik < target_variance) {
+        ## choose smallest var-loglikelihood < target_variance
+        found_good <- TRUE
+      }
+    }
+    if (!found_good) id <- length(test) #Take largest number of particles if still not hitting variance target
+    n_particles <- test[id]
+  }
+
+  set.seed(seed) #To reproduce pMCMC results
+
   ### Set particle filter
   # print('about to set up particle filter')
   # print('set up particle filter')
+  pf <- mcstate::particle_filter$new(data, model, n_particles, compare_funct,
+                                     index = index, seed = seed,
+                                     stochastic_schedule = stochastic_schedule,
+                                     ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                     n_threads = n_threads)
 
   # print('about to set up pmcmc control')
   ### Set pmcmc control
@@ -259,21 +320,6 @@ run_pmcmc <- function(data_raw=NULL,
     rerun_random = TRUE)
   # print('set up pmcmc control')
 
-  ## Set initial state based on a user-given equilibrium EIR
-  init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
-
-  ### Set pmcmc parameters
-  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
-                                         prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
-  volatility <- mcstate::pmcmc_parameter("volatility", rgamma(1,shape = 3.4, rate = 3.1), min = 0,
-                                     prior = function(p) dgamma(p, shape = 3.4, rate = 3.1, log = TRUE))
-
-  pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
-
-
-  mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
-                                             proposal_matrix,
-                                             transform = transform(init_state)) ## Calls transformation function based on pmcmc parameters
   # print('parameters set')
   # print('starting pmcmc run')
   ### Run pMCMC
