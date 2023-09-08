@@ -11,6 +11,7 @@
 #'                    given a target prevalence in under 5yos
 #' @param proposal_matrix Proposal matrix for MCMC parameters
 #' @param max_param Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)
+#' @param prop_treated Proportion of clinical cases that receive effective treatment (default = 40%)
 #' @param max_steps Maximum steps for particle filter (default = 1e7)
 #' @param atol atol for particle filter (default = 1e-3)
 #' @param rtol rtol for particle filter (default = 1e-6)
@@ -44,6 +45,7 @@ run_pmcmc <- function(data_raw=NULL,
                       n_particles=200,
                       proposal_matrix,
                       max_param=1000,
+                      prop_treated = 0.4,
                       # EIR_vol,
                       # proposal_dist,
                       # init_EIR = 100,
