@@ -448,8 +448,8 @@ transform <- function(init_state){ ## Wraps transformation function in a 'closur
     init_state$betaa_eq <- theta[["init_betaa"]]
 
     if(init_state$particle_tune) {
-      init_state$fixed_betaa <- init_state$betaa_eq
-      init_state$fixed_vol <- 1
+      init_state$betaa_eq <- init_state$fixed_betaa
+      init_state$volatility <- init_state$fixed_vol
     }
     # print(init_state$betaa_eq)
     return(init_state)

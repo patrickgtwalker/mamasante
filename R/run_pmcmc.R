@@ -261,6 +261,9 @@ run_pmcmc <- function(data_raw=NULL,
       rerun_every = 1,
       rerun_random = FALSE)
 
+    init_state$fixed_vol <- 1
+    init_state$fixed_betaa <- init_state$betaa_eq
+
     min <- 10
     max <- 200
     test <- union(min * 2**(seq(0, floor(log2(max / min)))), max)
