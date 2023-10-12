@@ -10,9 +10,11 @@ run_pmcmc(
   data_raw_mg = NULL,
   init_EIR = 10,
   target_prev = NULL,
+  target_prev_group = "5.10",
   n_particles = 200,
   proposal_matrix,
   max_param = 1000,
+  prop_treated = 0.4,
   max_steps = 1e+07,
   atol = 1e-06,
   rtol = 1e-06,
@@ -49,6 +51,8 @@ given a target prevalence in under 5yos}
 \item{proposal_matrix}{Proposal matrix for MCMC parameters}
 
 \item{max_param}{Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)}
+
+\item{prop_treated}{Proportion of clinical cases that receive effective treatment (default = 40\%)}
 
 \item{max_steps}{Maximum steps for particle filter (default = 1e7)}
 

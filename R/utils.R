@@ -327,9 +327,13 @@ initialise <- function(init_EIR,mpl,det_model){
     # print(EIR_vals)
     # cat('New initial EIR: ',init_EIR,'\n')
   }
-  if(!is.null(mpl$target_prev)){
+  if(!is.null(mpl$target_prev)&mpl$target_prev_group!='u5'){
     print('Optimizing initial EIR based on target prevalence.')
     opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR,mpl=mpl,method='Brent',lower=0,upper=2000)
+    init_EIR <- opt_EIR$par
+  }else if(!is.null(mpl$target_prev)&mpl$target_prev_group=='u5'){
+    print('Optimizing initial EIR based on target prevalence.')
+    opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR_u5,mpl=mpl,method='Brent',lower=0,upper=2000)
     init_EIR <- opt_EIR$par
   }
   ## Run equilibrium function
@@ -542,4 +546,23 @@ get_init_EIR <- function(par,mpl){
                                                     model_param_list = mpl)
 
   return((equil$prev2.10 - mpl$target_prev)^2)
+}
+#' Return an initial EIR based on a user-given target prevalence in <5 yead old children
+#'
+#' \code{get_init_EIR_u5} Return an initial EIR based on a user-given target prevalence in <5 yead old children
+#'
+#' @param par An initial EIR value from optim function
+#' @param mpl Model parameter list
+#'
+#' @export
+get_init_EIR_u5 <- function(par,mpl){
+  init_EIR <- par[1]
+  print(init_EIR)
+  equil <- sifter::equilibrium_init_create_stripped(age_vector = mpl$init_age,
+                                                    ft = mpl$prop_treated,
+                                                    het_brackets = mpl$het_brackets,
+                                                    init_EIR = init_EIR,
+                                                    model_param_list = mpl)
+
+  return((equil$prev05 - mpl$target_prev)^2)
 }

@@ -42,6 +42,7 @@ run_pmcmc <- function(data_raw=NULL,
                       data_raw_mg=NULL,
                       init_EIR = 10,
                       target_prev=NULL,
+                      target_prev_group='5.10',
                       n_particles=200,
                       proposal_matrix,
                       max_param=1000,
@@ -111,7 +112,6 @@ run_pmcmc <- function(data_raw=NULL,
 
   #Provide age categories, proportion treated, and number of heterogeneity brackets
   init_age <- c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80)
-  prop_treated <- 0.4
   het_brackets <- 5
 
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
@@ -120,6 +120,7 @@ run_pmcmc <- function(data_raw=NULL,
                                     het_brackets = het_brackets,
                                     max_param = max_param,
                                     target_prev = target_prev,
+                                    target_prev_group = target_prev_group,
                                     state_check = state_check,
                                     lag_rates = lag_rates,
                                     country = country,
