@@ -12,14 +12,10 @@
 #' @param proposal_matrix Proposal matrix for MCMC parameters
 #' @param max_param Ceiling for proposed stochastic parameter (either EIR or betaa) values (default = 1000)
 #' @param prop_treated Proportion of clinical cases that receive effective treatment (default = 40%)
-#' @param max_steps Maximum steps for particle filter (default = 1e7)
-#' @param atol atol for particle filter (default = 1e-3)
-#' @param rtol rtol for particle filter (default = 1e-6)
 #' @param n_steps Number of MCMC steps in a single chain (default = 500)
 #' @param n_threads Number of processing threads (default = 4)
 #' @param n_chains Number of chains (default = 1)
 #' @param n_workers Number of workers (default = 4)
-#' @param lag_rates Number of delay compartments (default = 10)
 #' @param state_check Run equilibrium checks, if state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
 #'                    If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
 #'                    If state_check = 0, no values are printed
@@ -32,6 +28,7 @@
 #' @param start_pf_time Number of days before first observation that particle filter will start (default = 30)
 #' @param particle_tune Logical to determine if tuning the number of particles should be performed.
 #' @param stoch_param The parameters which will stochastically update over the time series, 'EIR' or 'betaa'.
+#' @param initial Is the initial equilibrium state informed by the user ('user-informed') or by the observed data ('fitted')?
 #' @param comparison The comparison function to be used. Either 'u5' which
 #'          equates the observed prevalence to prevalence under 5 years old in
 #'          the model or 'pgmg' which calculates prevalence in primigravid and
@@ -46,32 +43,26 @@ run_pmcmc <- function(data_raw=NULL,
                       proposal_matrix,
                       max_param=1000,
                       prop_treated = 0.4,
-                      # EIR_vol,
-                      # proposal_dist,
-                      # init_EIR = 100,
-                      max_steps = 1e7,
-                      atol = 1e-6,
-                      rtol = 1e-6,
                       n_steps = 500,
                       n_threads = 4,
                       n_chains = 1,
                       n_workers = 1,
-                      lag_rates = 10,
-                      state_check = 0,## Run equilibrium checks
-                      # If state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
-                      # If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
-                      # If state_check = 0, no values are printed
+                      state_check = FALSE,## Run equilibrium checks
+                      # If state_check = TRUE, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
+                      # If state_check = TRUE and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
+                      # If state_check = FALSE, no values are printed
                       country = NULL,
                       admin_unit = NULL,
                       preyears = 2, #Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began
-                      seasonality_on = 1,  ## state_check = 1 runs a deterministic seasonal model before running the stochastic model to get more realistic immunity levels
-                      ## If seasonality_on = 0, runs the stochastic model based on the standard equilibrium solution
-                      seasonality_check = 0,##If 1, saves values of seasonality equilibrium
+                      seasonality_on = TRUE,  ## state_check = TRUE runs a deterministic seasonal model before running the stochastic model to get more realistic immunity levels
+                      ## If seasonality_on = FALSE, runs the stochastic model based on the standard equilibrium solution
+                      seasonality_check = FALSE,##If TRUE, saves values of seasonality equilibrium
                       seed = 1L,
                       start_pf_time = 30,
                       particle_tune = FALSE,
                       stoch_param = c('EIR','betaa'),
-                      comparison = c('u5','pgmg','pgsg')){
+                      comparison = c('u5','pgmg','pgsg'),
+                      initial = 'informed'){
   ##Merge primigrav and multigrav datasets if necessary.
   if(comparison=='pgmg' | comparison=='pgsg'){
       data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month'),suffix = c('.pg','.mg'))
@@ -79,102 +70,93 @@ run_pmcmc <- function(data_raw=NULL,
   Sys.setenv("MC_CORES"=n_threads)
 
   ## Modify dates from data
-  # str(data_raw$month)
-  # print(data_raw$month)
   start_obs <- min(zoo::as.Date(zoo::as.yearmon(data_raw$month)))#Month of first observation (in Date format)
-  # cat('start_obs: ',as.character(start_obs),'\n')
   time_origin <- zoo::as.Date(paste0(lubridate::year(start_obs)-1,'-01-01')) #January 1 of year before observation (in Date format)
-  # cat('time_origin: ',as.character(time_origin),'\n')
   data_raw_time <- data_raw
   data_raw_time$date <- zoo::as.Date(zoo::as.yearmon(data_raw$month), frac = 0.5) #Convert dates to middle of month
   data_raw_time$t <- as.integer(difftime(data_raw_time$date,time_origin,units="days")) #Calculate date as number of days since January 1 of year before observation
-  # cat('First observed time: ',min(data_raw_time$t),'\n')
   initial_time <- min(data_raw_time$t) - start_pf_time #Start particle filter a given time (default = 30d) before first observation
-  # cat('initial_time: ',initial_time,'\n')
+
   #Create daily sequence from initial_time to end of observations
   #This is so the trajector histories return daily values (otherwise it returns
   #model values only at the dates of observation)
-  # time_list <- data.frame(t=initial_time:max(data_raw_time$t))
-  # data_raw_time <- dplyr::left_join(time_list,data_raw_time,by='t')
   start_stoch <- lubridate::floor_date(zoo::as.Date(min(data_raw_time$date) - start_pf_time), unit='month') #Start of stochastic schedule; needs to start when particle filter starts
-  # cat('start_stoch: ',as.character(start_stoch),'\n')
-  # data_raw_time <- plyr::rbind.fill(data.frame(t=initial_time),data_raw_time)
   data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
-  # print('Data processed')
+
   ## Provide schedule for changes in stochastic process (in this case EIR)
   ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
   stoch_update_dates <- c(start_stoch,seq.Date(start_obs,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month'))
   stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
-  # cat('stochastic_schedule:\n',stochastic_schedule,'\n')
-  # print('stochastic_schedule assigned')
 
-
-  #Provide age categories, proportion treated, and number of heterogeneity brackets
+  #Provide age categories, and number of heterogeneity brackets
   init_age <- c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80)
-  prop_treated <- 0.4
   het_brackets <- 5
+  lag_rates <- 10
+  max_steps <- 1e7
+  atol <- 1e-6
+  rtol <- 1e-6
+
 
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
   mpl_pf <- sifter::model_param_list_create(init_age = init_age,
-                                    prop_treated = prop_treated,
-                                    het_brackets = het_brackets,
-                                    max_param = max_param,
-                                    target_prev = target_prev,
-                                    state_check = state_check,
-                                    lag_rates = lag_rates,
-                                    country = country,
-                                    admin_unit = admin_unit,
-                                    start_stoch = start_stoch,
-                                    time_origin = time_origin,
-                                    seasonality_on = seasonality_on,
-                                    preyears = preyears,
-                                    particle_tune = particle_tune)
-  # print('model parameter list created')
-  # print(mpl_pf$state_check)
-  # print(mpl_pf$ssa0)
+                                            prop_treated = prop_treated,
+                                            het_brackets = het_brackets,
+                                            max_param = max_param,
+                                            target_prev = target_prev,
+                                            state_check = state_check,
+                                            lag_rates = lag_rates,
+                                            country = country,
+                                            admin_unit = admin_unit,
+                                            start_stoch = start_stoch,
+                                            time_origin = time_origin,
+                                            seasonality_on = seasonality_on,
+                                            preyears = preyears,
+                                            particle_tune = particle_tune)
 
   ## If a deterministic seasonal model is needed prior to the stochastic model, this loads the deterministic odin model
   det_model <- NULL
-  if(seasonality_on == 1 & !is.data.frame(init_EIR)){
+  if(seasonality_on & !is.data.frame(init_EIR)){
     odin_det <- system.file("odin", "odin_model_stripped_seasonal.R", package = "sifter")
     det_model <- odin::odin(odin_det)
-  } else if(seasonality_on == 0 & is.data.frame(init_EIR)){
+  } else if(!(seasonality_on) & is.data.frame(init_EIR)){
     odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
     det_model <- odin::odin(odin_det)
-  } else if(seasonality_on==1 & is.data.frame(init_EIR)){
-    # print('A seasonal, piecewise historical initialisation is not yet available.')
-    # print('Setting a seasonal iniatilisation with the last EIR value provided.')
+  } else if(seasonality_on & is.data.frame(init_EIR)){
     odin_det <- system.file("odin", "odin_model_stripped_piecewise_seas.R", package = "sifter")
     det_model <- odin::odin(odin_det)
-    # init_EIR = init_EIR$EIR[nrow(init_EIR)]
   }
 
-
   ## Load stochastic model in odin.dust
-  # print('about to load stochastic model')
   ##Switch between EIR and mosquito emergence models
   stoch_file <- ifelse(stoch_param=='betaa','odinmodelmatchedstoch_mozemerg.R','odinmodelmatchedstoch.R')
   odin_stoch <- system.file("odin", stoch_file, package = "sifter")
   model <- odin.dust::odin_dust(odin_stoch)
-  # print('loaded stochastic model')
-  # print(model$public_methods$has_openmp())
+
   if(!model$public_methods$has_openmp()) warning('openmp must be enabled to run particle filter in parallel')
 
-  ## Set initial state based on a user-given equilibrium EIR
-  init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
-
-  ### Set pmcmc parameters
-  init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
-                                         prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
   volatility <- mcstate::pmcmc_parameter("volatility", rgamma(1,shape = 3.4, rate = 3.1), min = 0,
                                          prior = function(p) dgamma(p, shape = 3.4, rate = 3.1, log = TRUE))
+  if(initial == 'informed'){
+    ## Set initial state based on a user-given equilibrium EIR
+    init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
+    ### Set pmcmc parameters
+    init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
+                                           prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
 
-  pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
+    pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
 
 
-  mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
-                                             proposal_matrix,
-                                             transform = transform(init_state)) ## Calls transformation function based on pmcmc parameters
+    mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
+                                               proposal_matrix,
+                                               transform = user_informed(init_state)) ## Calls transformation function based on pmcmc parameters
+  }else if(initial == 'fitted'){
+    log_init_EIR <- mcstate::pmcmc_parameter("log_init_EIR", 1.5, min = -8.5, max = 8.5,
+                                             prior = function(p) dnorm(p, mean = 0, sd = 10, log = TRUE) + p) #Add p to adjust for sampling on log scale
+    pars = list(log_init_EIR = log_init_EIR, volatility = volatility) ## Put pmcmc parameters into a list
+    mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
+                                               proposal_matrix,
+                                               transform = data_informed(mpl_pf,det_model)) ## Calls transformation function based on pmcmc parameters
+  }
 
   n_threads <- dust::dust_openmp_threads(n_threads, action = "fix")
   if(comparison=='u5'){
@@ -341,7 +323,7 @@ run_pmcmc <- function(data_raw=NULL,
 
   ##Save seasonality equilibrium trajectories if checking equilibrium
   seas_pretime <- NULL
-  if(seasonality_on==1 & seasonality_check==1){
+  if(seasonality_on & seasonality_check){
     print('Saving seasonality equilibrium trajectories')
     # Create list of seasonality trajectories for each set of sampled parameters in the posterior
     seas_pretime <- parallel::mclapply(1:nrow(pars), function(x) check_seasonality(theta=pars[x,],mpl_pf=mpl_pf,det_model=det_model))
