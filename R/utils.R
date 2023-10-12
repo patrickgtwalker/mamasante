@@ -328,11 +328,11 @@ initialise <- function(init_EIR,mpl,det_model){
     # cat('New initial EIR: ',init_EIR,'\n')
   }
   if(!is.null(mpl$target_prev)&mpl$target_prev_group!='u5'){
-    print('Optimizing initial EIR based on target prevalence.')
+    print('Optimizing initial EIR based on target prevalence in 2 to 10 year olds.')
     opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR,mpl=mpl,method='Brent',lower=0,upper=2000)
     init_EIR <- opt_EIR$par
   }else if(!is.null(mpl$target_prev)&mpl$target_prev_group=='u5'){
-    print('Optimizing initial EIR based on target prevalence.')
+    print('Optimizing initial EIR based on target prevalence in under 5 year olds.')
     opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR_u5,mpl=mpl,method='Brent',lower=0,upper=2000)
     init_EIR <- opt_EIR$par
   }
