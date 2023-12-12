@@ -309,14 +309,15 @@ compare_pgmg <- function(state, observed, pars = NULL) {
 #'    then optionally runs a deterministic seasonal model and returns initial
 #'    values to be used for the stochastic model fitting.
 #'
+#' @param init_EIR Optional initial EIR that can be supplied by user. Can be a scalar or a dataframe. Default = NULL
 #' @param mpl Model parameter list. Default = NULL
-#' @param season_model Seasonality model to be used for the optional deterministic
-#'    model. Default = NULL
+#' @param det_model Deterministic model to be used for to set initial values for stochastic model. Default = NULL
 #'
 #' @export
 initialise <- function(init_EIR,mpl,det_model){
   EIR_vals <- NULL
   EIR_times <- NULL
+  ##Convert EIR dataframe into vectors for use in the piecewise deterministic models.
   if(is.data.frame(init_EIR)){
     # print('Input EIR: ')
     # print(init_EIR)
