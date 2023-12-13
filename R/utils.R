@@ -386,7 +386,7 @@ initialise <- function(init_EIR,mpl,det_model){
     # cat('prev equilibrium: ',state_use$prev,'\n')
     # cat('prev seasonal: ',init4pmcmc$prev,'\n')
     #Print some equilibrium checks if state_check==1
-    if(mpl$state_check==1){
+    if(mpl$state_check){
       print('running equilibrium checks')
       H <- sum(init4pmcmc$init_S) + sum(init4pmcmc$init_T) + sum(init4pmcmc$init_D) + sum(init4pmcmc$init_A) + sum(init4pmcmc$init_U) + sum(init4pmcmc$init_P)
 
@@ -433,7 +433,7 @@ initialise <- function(init_EIR,mpl,det_model){
 #------------------------------------------------
 #' Transformation function that calculates initial values for stochastic model
 #'
-#' \code{transform} Calculates the model equilibrium based on an initial EIR values,
+#' \code{user_informed} Calculates the model equilibrium based on an initial EIR values,
 #'    then optionally runs a deterministic seasonal model and returns initial
 #'    values to be used for the stochastic model fitting.
 #'
@@ -442,7 +442,7 @@ initialise <- function(init_EIR,mpl,det_model){
 #'    model. Default = NULL
 #'
 #' @export
-transform <- function(init_state){ ## Wraps transformation function in a 'closure' environment so you can pass other parameters that you aren't fitting with the pMCMC
+user_informed <- function(init_state){ ## Wraps transformation function in a 'closure' environment so you can pass other parameters that you aren't fitting with the pMCMC
   function(theta) {
     ## theta: particle filter parameters that are being fitted (and so are changing at each MCMC step)
     # print('in transform function')
@@ -457,6 +457,113 @@ transform <- function(init_state){ ## Wraps transformation function in a 'closur
     }
     # print(init_state$betaa_eq)
     return(init_state)
+  }
+}
+#------------------------------------------------
+#' Transformation function that calculates initial values for stochastic model
+#'
+#' \code{data_informed} Calculates the model equilibrium based on an initial EIR values,
+#'    then optionally runs a deterministic seasonal model and returns initial
+#'    values to be used for the stochastic model fitting.
+#'
+#' @param mpl Model parameter list. Default = NULL
+#' @param season_model Seasonality model to be used for the optional deterministic
+#'    model. Default = NULL
+#'
+#' @export
+data_informed <- function(mpl_pf,season_model){ ## Wraps transformation function in a 'closure' environment so you can pass other parameters that you aren't fitting with the pMCMC
+  function(theta) {
+    ## theta: particle filter parameters that are being fitted (and so are changing at each MCMC step)
+    # print('in transform function')
+    init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
+    vol <- theta[["volatility"]]
+    mpl <- append(mpl_pf,list(volatility = vol)) ## Add extra MCMC parameters to model parameter list that aren't needed to calculate equilibrium
+
+    ## Run equilibrium function
+    state <- equilibrium_init_create_stripped(init_EIR = init_EIR,
+                                              model_param_list = mpl,
+                                              age_vector = mpl$init_age,
+                                              ft = mpl$prop_treated,
+                                              het_brackets = mpl$het_brackets,
+                                              state_check = mpl$state_check)
+    # print('equilibrium state calculated')
+    # print(state)
+
+    ##run deterministic seasonality model first if seasonality_on == 1
+    if(mpl$seasonality_on){
+      # print('creating seasonality equilirium')
+      #Keep only necessary parameters
+      state_use <- state[names(state) %in% coef(season_model)$name]
+
+      # create model with initial values
+      mod <- season_model$new(user = state_use, use_dde = TRUE)
+
+      # Define time length of the deterministic model run (preyears = how many years you want the deterministic model to run before the particle filter)
+      # deterministic_stop: defines the day the seasonality model should stop so that
+      #                      the particle filter begins at the right time of year
+      deterministic_stop <- as.integer(difftime(mpl$start_stoch,mpl$time_origin,units="days"))
+      # print(mpl$preyears*365+deterministic_stop)
+      tt <- seq(0, mpl$preyears*365+deterministic_stop,length.out=100)
+
+      # run seasonality model
+      mod_run <- mod$run(tt, verbose=FALSE,step_size_max=9)
+
+      # shape output
+      out <- mod$transform_variables(mod_run)
+      # windows(10,8)
+      # plot(out$t,out$prev,type='l')
+      # View(out)
+
+      # Transform seasonality model output to match expected input of the stochastic model
+      init4pmcmc <- transform_init(out)
+      # print(init4pmcmc)
+      # cat('prev equilibrium: ',state_use$prev,'\n')
+      # cat('prev seasonal: ',init4pmcmc$prev,'\n')
+
+      #Print some equilibrium checks if state_check==1
+      if(mpl$state_check){
+        print('running equilibrium checks')
+        H <- sum(init4pmcmc$init_S) + sum(init4pmcmc$init_T) + sum(init4pmcmc$init_D) + sum(init4pmcmc$init_A) + sum(init4pmcmc$init_U) + sum(init4pmcmc$init_P)
+
+        deriv_S11 <- -init4pmcmc$FOI_eq[1,1]*init4pmcmc$init_S[1,1] + init4pmcmc$rP*init4pmcmc$init_P[1,1] + init4pmcmc$rU*init4pmcmc$init_U[1,1] +
+          init4pmcmc$eta*H*init4pmcmc$het_wt[1] - (init4pmcmc$eta+init4pmcmc$age_rate[1])*init4pmcmc$init_S[1,1]
+        print('Seasonal equilibrium')
+        cat('deriv S check: ',deriv_S11,'\n')
+        b <- init4pmcmc$b0 * ((1-init4pmcmc$b1)/(1+(init4pmcmc$init_IB[1,1]/init4pmcmc$IB0)^init4pmcmc$kB)+init4pmcmc$b1)
+        cat('b check: ',b,'\n')
+        EIR_eq11 <- init4pmcmc$init_EIR/365 * init4pmcmc$rel_foi[1] * init4pmcmc$foi_age[1]
+        FOI_lag <- EIR_eq11 * (if(init4pmcmc$init_IB[1,1]==0) init4pmcmc$b0 else b)
+        deriv_FOI111 <- (init4pmcmc$lag_rates/init4pmcmc$dE)*FOI_lag - (init4pmcmc$lag_rates/init4pmcmc$dE)*init4pmcmc$FOI_eq[1,1]
+        cat('deriv FOI check: ',deriv_FOI111,'\n')
+
+        print('Compare equilibrium state to seasonal equilibrium')
+        print('The following values should be 0 or very close.')
+        cat('S check: ',init4pmcmc$init_S-state$init_S,'\n')
+        cat('T check: ',init4pmcmc$init_T-state$init_T,'\n')
+        cat('D check: ',init4pmcmc$init_D-state$init_D,'\n')
+        cat('A check: ',init4pmcmc$init_A-state$init_A,'\n')
+        cat('U check: ',init4pmcmc$init_U-state$init_U,'\n')
+        cat('P check: ',init4pmcmc$init_P-state$init_P,'\n')
+        cat('Iv check: ',init4pmcmc$init_Iv-state$init_Iv,'\n')
+        cat('init_EIR check: ',state$init_EIR-init4pmcmc$init_EIR,'\n')
+        cat('prev check: ',state$prev-init4pmcmc$prev,'\n')
+
+        print('Helpful values for reference:')
+        cat('init_EIR: ',state$init_EIR,'\n')
+        cat('Equilibrium prev: ',state$prev,'\n')
+        cat('Seasonal equilibrium prev: ',init4pmcmc$prev,'\n')
+        saveRDS(append(mpl,init4pmcmc),'seasonal_equil_values.RDS')
+        saveRDS(state,'original_equil_values.RDS')
+
+        # mpl['init_EIR'] <- NULL
+        # View(init4pmcmc)
+        # View(state_use)
+      }
+      return(append(mpl,init4pmcmc)) #Append all parameters from model parameter list for stochastic model
+    }
+    else{
+      return(state)
+    }
   }
 }
 #------------------------------------------------
@@ -484,7 +591,7 @@ check_seasonality <- function(theta,mpl_pf,season_model){
                                             het_brackets = mpl$het_brackets,
                                             state_check = mpl$state_check)
   # print(state)
-  ##run seasonality model first if seasonality_on == 1
+  ##run seasonality model first if seasonality_on == TRUE
   state_use <- state[names(state) %in% coef(season_model)$name]
 
   # create model with initial values
