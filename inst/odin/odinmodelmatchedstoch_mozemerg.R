@@ -172,6 +172,15 @@ phi[1:na,1:nh] <- phi0*((1-phi1)/(1+(IC[i,j]/IC0)^kC) + phi1)
 dim(phi0to59) <- c(age59,nh)
 phi0to59[1:age59,] <- phi[i,j]*den[i]*het_wt[j]
 output(phi_out) <- sum(phi0to59[,])
+dim(IC_all) <- c(na,nh)
+dim(IB_all) <- c(na,nh)
+dim(ID_all) <- c(na,nh)
+IC_all[,] <- IC[i,j]*den[i]*het_wt[j]
+IB_all[,] <- IB[i,j]*den[i]*het_wt[j]
+ID_all[,] <- ID[i,j]*den[i]*het_wt[j]
+output(IC_out) <- sum(IC_all[,])
+output(IB_out) <- sum(IB_all[,])
+output(ID_out) <- sum(ID_all[,])
 
 # IB - infection blocking immunity
 init_IB[,] <- user()
@@ -388,6 +397,8 @@ deriv(Iv) <- incv - mu*Iv
 # Total mosquito population
 mv = Sv+Ev+Iv
 output(spz_rate) <- Iv/mv
+output(eff_moz_pop) <- mv
+output(moz2human_ratio) <- mv/H
 
 ##------------------------------------------------------------------------------
 ###################

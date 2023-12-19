@@ -129,6 +129,39 @@ admin_match <- function(admin_unit = NULL, country = NULL,
 #------------------------------------------------
 #' transform final state of a seasonal model into the initial state of a stochastic model
 #'
+#' \code{data_process} Transform data file
+#'
+#' @param data_raw Data input from user
+#'   Default = NULL
+#'@param start_pf_time Amount of time before first observation to start particle filter
+#' @export
+
+data_process <- function(data_raw = NULL, start_pf_time = NULL){
+  ## Modify dates from data
+  start_obs <- min(zoo::as.Date(zoo::as.yearmon(data_raw$month)))#Month of first observation (in Date format)
+  time_origin <- zoo::as.Date(paste0(lubridate::year(start_obs)-1,'-01-01')) #January 1 of year before observation (in Date format)
+  data_raw_time <- data_raw
+  data_raw_time$date <- zoo::as.Date(zoo::as.yearmon(data_raw$month), frac = 0.5) #Convert dates to middle of month
+  data_raw_time$t <- as.integer(difftime(data_raw_time$date,time_origin,units="days")) #Calculate date as number of days since January 1 of year before observation
+  initial_time <- min(data_raw_time$t) - start_pf_time #Start particle filter a given time (default = 30d) before first observation
+
+  #Create daily sequence from initial_time to end of observations
+  #This is so the trajector histories return daily values (otherwise it returns
+  #model values only at the dates of observation)
+  start_stoch <- lubridate::floor_date(zoo::as.Date(min(data_raw_time$date) - start_pf_time), unit='month') #Start of stochastic schedule; needs to start when particle filter starts
+  data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
+
+  ## Provide schedule for changes in stochastic process (in this case EIR)
+  ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
+  stoch_update_dates <- c(seq.Date(start_stoch,start_obs,by='month'),seq.Date(start_obs,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month')[-1])
+  stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
+
+  return(list(data=data,stochastic_schedule=stochastic_schedule,start_stoch=start_stoch,time_origin=time_origin))
+}
+
+#------------------------------------------------
+#' transform final state of a seasonal model into the initial state of a stochastic model
+#'
 #' \code{transform_init} Transform final state of a seasonal model into the initial state of a stochastic model
 #'
 #' @param final_state Final time point of a seasonal model
@@ -360,7 +393,7 @@ initialise <- function(init_EIR,mpl,det_model){
     #                      the particle filter begins at the right time of year
     deterministic_stop <- as.integer(difftime(mpl$start_stoch,mpl$time_origin,units="days"))
     # print(mpl$preyears*365+deterministic_stop)
-    tt <- seq(0, mpl$preyears*365+deterministic_stop,length.out=100)
+    tt <- seq(deterministic_stop, mpl$preyears*365+deterministic_stop,length.out=100)
     # cat('pre-model time:\n',tt,'\n')
     # run seasonality model
     mod_run <- mod$run(tt, verbose=FALSE,step_size_max=9)

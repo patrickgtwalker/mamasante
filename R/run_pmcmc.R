@@ -27,7 +27,6 @@
 #' @param seed Allows user to specify a seed (default = 1L)
 #' @param start_pf_time Number of days before first observation that particle filter will start (default = 30)
 #' @param particle_tune Logical to determine if tuning the number of particles should be performed.
-#' @param stoch_param The parameters which will stochastically update over the time series, 'EIR' or 'betaa'.
 #' @param initial Is the initial equilibrium state informed by the user ('user-informed') or by the observed data ('fitted')?
 #' @param comparison The comparison function to be used. Either 'u5' which
 #'          equates the observed prevalence to prevalence under 5 years old in
@@ -54,14 +53,12 @@ run_pmcmc <- function(data_raw=NULL,
                       # If state_check = FALSE, no values are printed
                       country = NULL,
                       admin_unit = NULL,
-                      preyears = 2, #Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began
                       seasonality_on = TRUE,  ## state_check = TRUE runs a deterministic seasonal model before running the stochastic model to get more realistic immunity levels
                       ## If seasonality_on = FALSE, runs the stochastic model based on the standard equilibrium solution
                       seasonality_check = FALSE,##If TRUE, saves values of seasonality equilibrium
                       seed = 1L,
                       start_pf_time = 30,
                       particle_tune = FALSE,
-                      stoch_param = c('EIR','betaa'),
                       comparison = c('u5','pgmg','pgsg'),
                       initial = 'informed'){
   ##Merge primigrav and multigrav datasets if necessary.
@@ -70,24 +67,10 @@ run_pmcmc <- function(data_raw=NULL,
   }
   Sys.setenv("MC_CORES"=n_threads)
 
-  ## Modify dates from data
-  start_obs <- min(zoo::as.Date(zoo::as.yearmon(data_raw$month)))#Month of first observation (in Date format)
-  time_origin <- zoo::as.Date(paste0(lubridate::year(start_obs)-1,'-01-01')) #January 1 of year before observation (in Date format)
-  data_raw_time <- data_raw
-  data_raw_time$date <- zoo::as.Date(zoo::as.yearmon(data_raw$month), frac = 0.5) #Convert dates to middle of month
-  data_raw_time$t <- as.integer(difftime(data_raw_time$date,time_origin,units="days")) #Calculate date as number of days since January 1 of year before observation
-  initial_time <- min(data_raw_time$t) - start_pf_time #Start particle filter a given time (default = 30d) before first observation
-
-  #Create daily sequence from initial_time to end of observations
-  #This is so the trajector histories return daily values (otherwise it returns
-  #model values only at the dates of observation)
-  start_stoch <- lubridate::floor_date(zoo::as.Date(min(data_raw_time$date) - start_pf_time), unit='month') #Start of stochastic schedule; needs to start when particle filter starts
-  data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
-
-  ## Provide schedule for changes in stochastic process (in this case EIR)
-  ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
-  stoch_update_dates <- c(start_stoch,seq.Date(start_obs,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month'))
-  stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
+  # ## Modify dates from data
+  data_proc <- data_process(data_raw=data_raw,start_pf_time=start_pf_time)
+  data <- data_proc$data
+  stochastic_schedule <- data_proc$stochastic_schedule
 
   #Provide age categories, and number of heterogeneity brackets
   init_age <- c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80)
@@ -96,6 +79,7 @@ run_pmcmc <- function(data_raw=NULL,
   max_steps <- 1e7
   atol <- 1e-6
   rtol <- 1e-6
+  preyears <- 5 #Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began
 
 
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
@@ -109,8 +93,8 @@ run_pmcmc <- function(data_raw=NULL,
                                     lag_rates = lag_rates,
                                     country = country,
                                     admin_unit = admin_unit,
-                                    start_stoch = start_stoch,
-                                    time_origin = time_origin,
+                                    start_stoch = data_proc$start_stoch,
+                                    time_origin = data_proc$time_origin,
                                     seasonality_on = seasonality_on,
                                     preyears = preyears,
                                     particle_tune = particle_tune)
@@ -125,13 +109,15 @@ run_pmcmc <- function(data_raw=NULL,
     odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
     det_model <- odin::odin(odin_det)
   } else if(seasonality_on & is.data.frame(init_EIR)){
-    odin_det <- system.file("odin", "odin_model_stripped_piecewise_seas.R", package = "sifter")
+    print('Seasonality not supported with multiple EIR values.')
+    print('Reverting to piece-wise constant EIR.')
+    odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
     det_model <- odin::odin(odin_det)
   }
 
   ## Load stochastic model in odin.dust
   ##Switch between EIR and mosquito emergence models
-  stoch_file <- ifelse(stoch_param=='betaa','odinmodelmatchedstoch_mozemerg.R','odinmodelmatchedstoch.R')
+  stoch_file <- 'odinmodelmatchedstoch_mozemerg.R'
   odin_stoch <- system.file("odin", stoch_file, package = "sifter")
   model <- odin.dust::odin_dust(odin_stoch)
 
@@ -180,7 +166,12 @@ run_pmcmc <- function(data_raw=NULL,
                      p_det_out = info$index$p_det_out,
                      phi_out = info$index$phi_out,
                      b_out = info$index$b_out,
-                     spz_rate = info$index$spz_rate))
+                     IC_out = info$index$IC_out,
+                     IB_out = info$index$IB_out,
+                     ID_out = info$index$ID_out,
+                     spz_rate = info$index$spz_rate,
+                     eff_moz_pop = info$index$eff_moz_pop,
+                     moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_u5
  }
@@ -205,7 +196,12 @@ run_pmcmc <- function(data_raw=NULL,
                      p_det_out = info$index$p_det_out,
                      phi_out = info$index$phi_out,
                      b_out = info$index$b_out,
-                     spz_rate = info$index$spz_rate))
+                     IC_out = info$index$IC_out,
+                     IB_out = info$index$IB_out,
+                     ID_out = info$index$ID_out,
+                     spz_rate = info$index$spz_rate,
+                     eff_moz_pop = info$index$eff_moz_pop,
+                     moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_pgmg
 
@@ -228,7 +224,12 @@ run_pmcmc <- function(data_raw=NULL,
                      p_det_out = info$index$p_det_out,
                      phi_out = info$index$phi_out,
                      b_out = info$index$b_out,
-                     spz_rate = info$index$spz_rate))
+                     IC_out = info$index$IC_out,
+                     IB_out = info$index$IB_out,
+                     ID_out = info$index$ID_out,
+                     spz_rate = info$index$spz_rate,
+                     eff_moz_pop = info$index$eff_moz_pop,
+                     moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_pgmg
   }
