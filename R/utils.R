@@ -127,7 +127,7 @@ admin_match <- function(admin_unit = NULL, country = NULL,
 }
 
 #------------------------------------------------
-#' transform final state of a seasonal model into the initial state of a stochastic model
+#' Process raw data for use in pMCMC
 #'
 #' \code{data_process} Transform data file
 #'
@@ -338,12 +338,13 @@ compare_pgmg <- function(state, observed, pars = NULL) {
 #------------------------------------------------
 #' Estimate the initial state given user inputs
 #'
-#' \code{transform} Calculates the model equilibrium based on an initial EIR values,
+#' \code{initialise} Calculates the model equilibrium based on an initial EIR values,
 #'    then optionally runs a deterministic seasonal model and returns initial
 #'    values to be used for the stochastic model fitting.
 #'
+#' @param init_EIR User supplied initial EIR
 #' @param mpl Model parameter list. Default = NULL
-#' @param season_model Seasonality model to be used for the optional deterministic
+#' @param det_model Seasonality model to be used for the optional deterministic
 #'    model. Default = NULL
 #'
 #' @export
@@ -602,7 +603,7 @@ data_informed <- function(mpl_pf,season_model){ ## Wraps transformation function
 #------------------------------------------------
 #' Function that returns values from optional seasonal deterministic model
 #'
-#' \code{transform} Calculates time series of the prefix seasonal deterministic
+#' \code{check_seasonality} Calculates time series of the prefix seasonal deterministic
 #'    model given the posterior distribution of pMCMC parameters
 #'
 #' @param theta Posterior distribution of pMCMC parameters. Default = NULL
