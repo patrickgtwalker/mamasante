@@ -309,6 +309,30 @@ compare_u5 <- function(state, observed, pars = NULL) {
 #------------------------------------------------
 #' Compare function to calculate likelihood
 #'
+#' \code{compare_pg} Compare function that compares observed data with model estimate
+#'  to calculate likelihood for the particle filter. Converts under 5 year old
+#'  prevalence in the model to prevalence among primigravid
+#'  women based on coefficients from a separate regression analysis.
+#'
+#' @param state Model output. Default = NULL
+#' @param observed Oberved data. Default = NULL
+#' @param pars Parameters, optional.
+#'
+#' @export
+compare_pg <- function(state, observed, pars = NULL) {
+  #skip comparison if data is missing
+  if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
+
+  ll_pg <- dbinom(x = observed$positive,
+                  size = observed$tested,
+                  prob = state['prev_pg',],
+                  log = TRUE)
+
+  return(ll_pg)
+}
+#------------------------------------------------
+#' Compare function to calculate likelihood
+#'
 #' \code{compare_pgmg} Compare function that compares observed data with model estimate
 #'  to calculate likelihood for the particle filter. Converts under 5 year old
 #'  prevalence in the model to prevalence among primigravid and multigravid
