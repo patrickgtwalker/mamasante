@@ -129,7 +129,7 @@ run_pmcmc <- function(data_raw=NULL,
     ## Set initial state based on a user-given equilibrium EIR
     init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
     ### Set pmcmc parameters
-    init_betaa <- mcstate::pmcmc_parameter("init_betaa", init_state$betaa_eq, min = 0,
+    init_betaa <- mcstate::pmcmc_parameter("init_betaa", rgamma(1,shape = 0.64, rate = 0.057), min = 0,
                                            prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
 
     pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
@@ -139,8 +139,8 @@ run_pmcmc <- function(data_raw=NULL,
                                                proposal_matrix,
                                                transform = user_informed(init_state)) ## Calls transformation function based on pmcmc parameters
   }else if(initial == 'fitted'){
-    log_init_EIR <- mcstate::pmcmc_parameter("log_init_EIR", 1.5, min = -8.5, max = 8.5,
-                                             prior = function(p) dnorm(p, mean = 0, sd = 10, log = TRUE) + p) #Add p to adjust for sampling on log scale
+    log_init_EIR <- mcstate::pmcmc_parameter("log_init_EIR", rnorm(1, mean = 4, sd = 3),
+                                             prior = function(p) dnorm(p, mean = 4, sd = 3, log = TRUE) + p) #Add p to adjust for sampling on log scale
     pars = list(log_init_EIR = log_init_EIR, volatility = volatility) ## Put pmcmc parameters into a list
     mcmc_pars <- mcstate::pmcmc_parameters$new(pars,
                                                proposal_matrix,
