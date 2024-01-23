@@ -7,13 +7,15 @@
 initialise(init_EIR, mpl, det_model)
 }
 \arguments{
+\item{init_EIR}{User supplied initial EIR}
+
 \item{mpl}{Model parameter list. Default = NULL}
 
-\item{season_model}{Seasonality model to be used for the optional deterministic
+\item{det_model}{Seasonality model to be used for the optional deterministic
 model. Default = NULL}
 }
 \description{
-\code{transform} Calculates the model equilibrium based on an initial EIR values,
+\code{initialise} Calculates the model equilibrium based on an initial EIR values,
 then optionally runs a deterministic seasonal model and returns initial
 values to be used for the stochastic model fitting.
 }

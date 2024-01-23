@@ -22,13 +22,11 @@ run_pmcmc(
   state_check = FALSE,
   country = NULL,
   admin_unit = NULL,
-  preyears = 2,
   seasonality_on = TRUE,
   seasonality_check = FALSE,
   seed = 1L,
   start_pf_time = 30,
   particle_tune = FALSE,
-  stoch_param = c("EIR", "betaa"),
   comparison = c("u5", "pgmg", "pgsg"),
   initial = "informed"
 )
@@ -67,8 +65,6 @@ If state_check = 0, no values are printed}
 
 \item{admin_unit}{Name of administrative unit (needed if using seasonality model)}
 
-\item{preyears}{Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began (default = 2)}
-
 \item{seasonality_on}{Toggle seasonality model run before observed time period (default = 1)}
 
 \item{seasonality_check}{Toggle saving values of seasonality equilibrium (default = 1)}
@@ -79,14 +75,14 @@ If state_check = 0, no values are printed}
 
 \item{particle_tune}{Logical to determine if tuning the number of particles should be performed.}
 
-\item{stoch_param}{The parameters which will stochastically update over the time series, 'EIR' or 'betaa'.}
-
 \item{comparison}{The comparison function to be used. Either 'u5' which
 equates the observed prevalence to prevalence under 5 years old in
 the model or 'pgmg' which calculates prevalence in primigravid and
 multigravid pregnant women for comparison with observed ANC data.}
 
 \item{initial}{Is the initial equilibrium state informed by the user ('user-informed') or by the observed data ('fitted')?}
+
+\item{preyears}{Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began (default = 2)}
 }
 \description{
 This function sets up and runs a particle MCMC that uses Dust, Odin and MCState

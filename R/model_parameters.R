@@ -317,6 +317,12 @@ model_param_list_create <- function(
   mp_list$gradient_mg <- coefs_mg_df[['gradient']]
   mp_list$av_lo_child_mg <- coefs_mg_df[['av_lo_child']]
   mp_list$intercept_mg <- coefs_mg_df[['intercept']]
+
+  coefs_all_df = apply(load_file('all_corr_sample.RDS'),2,median)
+  mp_list$gradient <- coefs_all_df[['gradient']]
+  mp_list$av_lo_child <- coefs_all_df[['av_lo_child']]
+  mp_list$intercept <- coefs_all_df[['intercept']]
+
   # # Fertility parameters
   # #Gravidity inputs
   # MZ_multi_rates <- readRDS('MiP-given/MZ_multi_rates.rds')

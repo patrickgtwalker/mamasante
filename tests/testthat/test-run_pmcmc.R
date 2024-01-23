@@ -12,8 +12,7 @@ test_run_sifter <- run_pmcmc(data_raw = data_sim, #I've added data_sim to the pa
                              state_check = 0,
                              seasonality_check = 0,
                              start_pf_time = 80,
-                             comparison = 'u5',
-                             stoch_param = 'betaa',
+                             comparison = 'ancall',
                              initial = 'informed')
 test_that("Testing data processing in run_pmcmc", {
 

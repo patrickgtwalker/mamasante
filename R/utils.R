@@ -336,6 +336,30 @@ compare_pgmg <- function(state, observed, pars = NULL) {
   return(ll_pg+ll_mg)
 }
 #------------------------------------------------
+#' Compare function to calculate likelihood
+#'
+#' \code{compare_ancall} Compare function that compares observed data with model estimate
+#'  to calculate likelihood for the particle filter. Converts under 5 year old
+#'  prevalence in the model to prevalence among all
+#'  women based on coefficients from a separate regression analysis (TZ data only).
+#'
+#' @param state Model output. Default = NULL
+#' @param observed Oberved data. Default = NULL
+#' @param pars Parameters, optional.
+#'
+#' @export
+compare_ancall <- function(state, observed, pars = NULL) {
+  #skip comparison if data is missing
+  if(is.na(observed$positive)) {
+    return(numeric(length(state[1,])))}
+  ll <- dbinom(x = observed$positive,
+               size = observed$tested,
+               prob = state['prev_anc_all',],
+               log = TRUE)
+
+  return(ll)
+}
+#------------------------------------------------
 #' Estimate the initial state given user inputs
 #'
 #' \code{initialise} Calculates the model equilibrium based on an initial EIR values,

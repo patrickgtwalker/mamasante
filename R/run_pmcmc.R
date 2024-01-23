@@ -59,7 +59,7 @@ run_pmcmc <- function(data_raw=NULL,
                       seed = 1L,
                       start_pf_time = 30,
                       particle_tune = FALSE,
-                      comparison = c('u5','pgmg','pgsg'),
+                      comparison = c('u5','pgmg','pgsg','ancall'),
                       initial = 'informed'){
   ##Merge primigrav and multigrav datasets if necessary.
   if(comparison=='pgmg' | comparison=='pgsg'){
@@ -232,6 +232,33 @@ run_pmcmc <- function(data_raw=NULL,
                      moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_pgmg
+  }
+  else if(comparison=='ancall'){
+    index <- function(info) {
+      list(run = c(prev_anc_all = info$index$prev_preg_all),
+           state = c(prev_05 = info$index$prev,
+                     prev_pg = info$index$prev_preg_pg,
+                     prev_sg = info$index$prev_preg_sg,
+                     prev_anc_all = info$index$prev_preg_all,
+                     EIR = info$index$EIR_out,
+                     betaa = info$index$betaa_out,
+                     clininc_all = info$index$inc,
+                     prev_all = info$index$prevall,
+                     clininc_05 = info$index$inc05,
+                     Dout = info$index$Dout,
+                     Aout = info$index$Aout,
+                     Uout = info$index$Uout,
+                     p_det_out = info$index$p_det_out,
+                     phi_out = info$index$phi_out,
+                     b_out = info$index$b_out,
+                     IC_out = info$index$IC_out,
+                     IB_out = info$index$IB_out,
+                     ID_out = info$index$ID_out,
+                     spz_rate = info$index$spz_rate,
+                     eff_moz_pop = info$index$eff_moz_pop,
+                     moz2human_ratio = info$index$moz2human_ratio))
+    }
+    compare_funct <- compare_ancall
   }
 
   ##Tune particles

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{data_process}
 \alias{data_process}
-\title{transform final state of a seasonal model into the initial state of a stochastic model}
+\title{Process raw data for use in pMCMC}
 \usage{
 data_process(data_raw = NULL, start_pf_time = NULL)
 }

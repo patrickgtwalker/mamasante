@@ -502,14 +502,20 @@ intercept_sg <- user()
 gradient_mg <- user()
 av_lo_child_mg <- user()
 intercept_mg <- user()
+gradient <- user()
+av_lo_child <- user()
+intercept <- user()
+
 
 log_odds_pg <- logodds_child+gradient_pg*(logodds_child-av_lo_child_pg)+intercept_pg
 log_odds_sg <- logodds_child+gradient_sg*(logodds_child-av_lo_child_sg)+intercept_sg
 log_odds_mg <- logodds_child+gradient_mg*(logodds_child-av_lo_child_mg)+intercept_mg
+log_odds_all <- logodds_child+gradient*(logodds_child-av_lo_child)+intercept
 
 output(prev_preg_pg) <- exp(log_odds_pg)/(1+exp(log_odds_pg))
 output(prev_preg_sg) <- exp(log_odds_sg)/(1+exp(log_odds_sg))
 output(prev_preg_mg) <- exp(log_odds_mg)/(1+exp(log_odds_mg))
+output(prev_preg_all) <- exp(log_odds_all)/(1+exp(log_odds_all))
 
 #Get prevalence by each age group
 ###Need to create switch to turn this on and off
