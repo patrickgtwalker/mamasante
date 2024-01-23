@@ -174,8 +174,7 @@ run_pmcmc <- function(data_raw=NULL,
                      moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_u5
- }
-  else if(comparison=='pgmg'){
+ } else if(comparison=='pgmg'){
     ##Output from particle filter
     ##    run: output used for likelihood calculation
     ##    state: output used for visualization
@@ -205,8 +204,7 @@ run_pmcmc <- function(data_raw=NULL,
     }
     compare_funct <- compare_pgmg
 
-  }
-  else if(comparison=='pgsg'){
+  } else if(comparison=='pgsg'){
     index <- function(info) {
       list(run = c(prev_pg = info$index$prev_preg_pg,
                    prev_mg = info$index$prev_preg_sg),
@@ -232,8 +230,7 @@ run_pmcmc <- function(data_raw=NULL,
                      moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_pgmg
-  }
-  else if(comparison=='ancall'){
+  } else if(comparison=='ancall'){
     index <- function(info) {
       list(run = c(prev_anc_all = info$index$prev_preg_all),
            state = c(prev_05 = info$index$prev,

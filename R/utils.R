@@ -356,7 +356,6 @@ compare_ancall <- function(state, observed, pars = NULL) {
                size = observed$tested,
                prob = state['prev_anc_all',],
                log = TRUE)
-
   return(ll)
 }
 #------------------------------------------------

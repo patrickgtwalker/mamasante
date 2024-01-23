@@ -27,7 +27,7 @@ run_pmcmc(
   seed = 1L,
   start_pf_time = 30,
   particle_tune = FALSE,
-  comparison = c("u5", "pgmg", "pgsg"),
+  comparison = c("u5", "pgmg", "pgsg", "ancall"),
   initial = "informed"
 )
 }
