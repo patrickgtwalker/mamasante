@@ -21,10 +21,12 @@ test_run_sifter <- run_pmcmc(data_raw = data_sim, #I've added data_sim to the pa
                              seasonality_on = 0,
                              state_check = 0,
                              seasonality_check = 0,
-                             start_pf_time = 80,
+                             start_pf_time = 30*9,
                              comparison = 'pg',
-                             initial = 'informed')
+                             initial = 'informed',
+                             check_flexibility = TRUE)
 test_that("Testing data processing in run_pmcmc", {
 
   expect_equal(2 * 2, 4)
 })
+run_pmcm

@@ -24,6 +24,7 @@
 #' @param preyears Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began (default = 2)
 #' @param seasonality_on Toggle seasonality model run before observed time period (default = 1)
 #' @param seasonality_check Toggle saving values of seasonality equilibrium (default = 1)
+#' @param check_flexibility Toggle saving values of flexibility period
 #' @param seed Allows user to specify a seed (default = 1L)
 #' @param start_pf_time Number of days before first observation that particle filter will start (default = 30)
 #' @param particle_tune Logical to determine if tuning the number of particles should be performed.
@@ -56,6 +57,7 @@ run_pmcmc <- function(data_raw=NULL,
                       seasonality_on = TRUE,  ## state_check = TRUE runs a deterministic seasonal model before running the stochastic model to get more realistic immunity levels
                       ## If seasonality_on = FALSE, runs the stochastic model based on the standard equilibrium solution
                       seasonality_check = FALSE,##If TRUE, saves values of seasonality equilibrium
+                      check_flexibility = FALSE,
                       seed = 1L,
                       start_pf_time = 30,
                       particle_tune = FALSE,
@@ -68,7 +70,7 @@ run_pmcmc <- function(data_raw=NULL,
   Sys.setenv("MC_CORES"=n_threads)
 
   # ## Modify dates from data
-  data_proc <- data_process(data_raw=data_raw,start_pf_time=start_pf_time)
+  data_proc <- data_process(data_raw=data_raw,start_pf_time=start_pf_time,check_flexibility = check_flexibility)
   data <- data_proc$data
   stochastic_schedule <- data_proc$stochastic_schedule
 

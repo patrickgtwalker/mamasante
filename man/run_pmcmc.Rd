@@ -24,6 +24,7 @@ run_pmcmc(
   admin_unit = NULL,
   seasonality_on = TRUE,
   seasonality_check = FALSE,
+  check_flexibility = FALSE,
   seed = 1L,
   start_pf_time = 30,
   particle_tune = FALSE,
@@ -68,6 +69,8 @@ If state_check = 0, no values are printed}
 \item{seasonality_on}{Toggle seasonality model run before observed time period (default = 1)}
 
 \item{seasonality_check}{Toggle saving values of seasonality equilibrium (default = 1)}
+
+\item{check_flexibility}{Toggle saving values of flexibility period}
 
 \item{seed}{Allows user to specify a seed (default = 1L)}
 

@@ -4,7 +4,7 @@
 \alias{data_process}
 \title{Process raw data for use in pMCMC}
 \usage{
-data_process(data_raw = NULL, start_pf_time = NULL)
+data_process(data_raw = NULL, start_pf_time = NULL, check_flexibility)
 }
 \arguments{
 \item{data_raw}{Data input from user

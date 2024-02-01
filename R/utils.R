@@ -136,7 +136,7 @@ admin_match <- function(admin_unit = NULL, country = NULL,
 #'@param start_pf_time Amount of time before first observation to start particle filter
 #' @export
 
-data_process <- function(data_raw = NULL, start_pf_time = NULL){
+data_process <- function(data_raw = NULL, start_pf_time = NULL, check_flexibility){
   ## Modify dates from data
   start_obs <- min(zoo::as.Date(zoo::as.yearmon(data_raw$month)))#Month of first observation (in Date format)
   time_origin <- zoo::as.Date(paste0(lubridate::year(start_obs)-1,'-01-01')) #January 1 of year before observation (in Date format)
@@ -149,12 +149,21 @@ data_process <- function(data_raw = NULL, start_pf_time = NULL){
   #This is so the trajector histories return daily values (otherwise it returns
   #model values only at the dates of observation)
   start_stoch <- lubridate::floor_date(zoo::as.Date(min(data_raw_time$date) - start_pf_time), unit='month') #Start of stochastic schedule; needs to start when particle filter starts
-  data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
-
   ## Provide schedule for changes in stochastic process (in this case EIR)
   ## Converts a sequence of dates (from start_stoch to 1 month after last observation point) to days since January 1 of the year before observation
   stoch_update_dates <- c(seq.Date(start_stoch,start_obs,by='month'),seq.Date(start_obs,max(as.Date(data_raw_time$date+30),na.rm = TRUE),by='month')[-1])
   stochastic_schedule <- as.integer(difftime(stoch_update_dates,time_origin,units="days"))
+  if(check_flexibility){
+    flex_time_dates <- zoo::as.Date(zoo::as.yearmon(seq.Date(start_stoch,start_obs,by='month')),frac=0.5)
+    dummy_dates <- data.frame(date=c(start_stoch,flex_time_dates[-length(flex_time_dates)]))
+    data_raw_time <- dplyr::bind_rows(dummy_dates,data_raw_time)
+    data_raw_time$t <- as.integer(difftime(data_raw_time$date,time_origin,units="days")) #Calculate date as number of days since January 1 of year before observation
+    initial_time <- min(data_raw_time$t)
+  }
+  data <- mcstate::particle_filter_data(data_raw_time, time = "t", rate = NULL, initial_time = initial_time) #Declares data to be used for particle filter fitting
+
+
+
 
   return(list(data=data,stochastic_schedule=stochastic_schedule,start_stoch=start_stoch,time_origin=time_origin))
 }
