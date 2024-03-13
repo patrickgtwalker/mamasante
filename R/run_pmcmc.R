@@ -65,7 +65,16 @@ run_pmcmc <- function(data_raw=NULL,
                       initial = 'informed'){
   ##Merge primigrav and multigrav datasets if necessary.
   if(comparison=='pgmg' | comparison=='pgsg'){
-      data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month'),suffix = c('.pg','.mg'))
+    data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month'),suffix = c('.pg','.mg'))
+    pg_avg_prev <- sum(data_raw[1:12,'positive.pg'])/sum(data_raw[1:12,'tested.pg'])
+    mg_avg_prev <- sum(data_raw[1:12,'positive.mg'])/sum(data_raw[1:12,'tested.mg'])
+    avg_prev <- c(pg_avg_prev,mg_avg_prev)
+  } else if(comparison=='pg'){
+    avg_prev <- sum(data_raw[1:12,'positive'])/sum(data_raw[1:12,'tested'])
+  } else if(comparison=='ancall'){
+    avg_prev <- sum(data_raw[1:12,'positive'])/sum(data_raw[1:12,'tested'])
+  } else if (comparison=='u5'){
+    avg_prev <- sum(data_raw[1:12,'positive'])/sum(data_raw[1:12,'tested'])
   }
   Sys.setenv("MC_CORES"=n_threads)
 
@@ -99,7 +108,9 @@ run_pmcmc <- function(data_raw=NULL,
                                     time_origin = data_proc$time_origin,
                                     seasonality_on = seasonality_on,
                                     preyears = preyears,
-                                    particle_tune = particle_tune)
+                                    particle_tune = particle_tune,
+                                    comparison = comparison,
+                                    avg_prev = avg_prev)
 
 
   ## If a deterministic seasonal model is needed prior to the stochastic model, this loads the deterministic odin model

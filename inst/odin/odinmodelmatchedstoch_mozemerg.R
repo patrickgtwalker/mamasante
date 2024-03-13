@@ -493,24 +493,15 @@ prevall[,] <- T[i,j] + D[i,j]  + A[i,j]*p_det[i,j]
 output(prev_all) <- sum(prevall[,])/sum(den[])
 logodds_child <- log(prev_u5/(1-prev_u5))
 
-gradient_pg <- user()
-av_lo_child_pg <- user()
-intercept_pg <- user()
-gradient_sg <- user()
-av_lo_child_sg <- user()
-intercept_sg <- user()
-gradient_mg <- user()
-av_lo_child_mg <- user()
-intercept_mg <- user()
-gradient <- user()
-av_lo_child <- user()
-intercept <- user()
+log_OR_pg_v_c <- user()
+log_OR_ps_v_pp <- user()
+log_OR_pm_v_pp <- user()
+log_OR_pall_v_c <- user()
 
-
-log_odds_pg <- logodds_child+gradient_pg*(logodds_child-av_lo_child_pg)+intercept_pg
-log_odds_sg <- logodds_child+gradient_sg*(logodds_child-av_lo_child_sg)+intercept_sg
-log_odds_mg <- logodds_child+gradient_mg*(logodds_child-av_lo_child_mg)+intercept_mg
-log_odds_all <- logodds_child+gradient*(logodds_child-av_lo_child)+intercept
+log_odds_pg <- logodds_child + log_OR_pg_v_c
+log_odds_sg <- log_odds_pg + log_OR_ps_v_pp
+log_odds_mg <- log_odds_pg + log_OR_pm_v_pp
+log_odds_all <- logodds_child + log_OR_pall_v_c
 
 output(prev_preg_pg) <- exp(log_odds_pg)/(1+exp(log_odds_pg))
 output(prev_preg_sg) <- exp(log_odds_sg)/(1+exp(log_odds_sg))

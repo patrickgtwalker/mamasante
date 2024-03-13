@@ -75,6 +75,8 @@
 #' @param itn_half_life ITN half life. Default =   2.64 * DY
 #' @param IRS_interval How long before IRS is repeated, i.e. when IRS decay = 1. Default =   1 * DY
 #' @param ITN_interval How long before ITN is repeated, i.e. when IRS decay = 1.  Default =   3 * DY
+#' @param avg_prev Average prevalence during first year of data collection
+#' @param comparison Comparison group used to calculate likelihood
 #' @param ... Any other parameters needed for non-standard model. If they share the same name
 #' as any of the defined parameters \code{model_param_list_create} will stop. You can either write
 #' any extra parameters you like individually, e.g. model_param_list_create(extra1 = 1, extra2 = 2)
@@ -170,6 +172,8 @@ model_param_list_create <- function(
   # ITN_interval =   3 * DY,
   country = NULL,
   admin_unit = NULL,
+  comparison = NULL,
+  avg_prev = 0.5,
   ...
 
 ){
@@ -303,25 +307,35 @@ model_param_list_create <- function(
   }
 
   ## Gravidity prevalence conversion coefficients:
-  coefs_pg_df = apply(load_file('pg_corr_sample.RDS'),2,median)
-  mp_list$gradient_pg <- coefs_pg_df[['gradient']]
-  mp_list$av_lo_child_pg <- coefs_pg_df[['av_lo_child']]
-  mp_list$intercept_pg <- coefs_pg_df[['intercept']]
+  coefs_pgsgmg_df <- apply(load_file('pgsgmg_corr_sample.RDS'),2,median)
+  coefs_all_df <- apply(load_file('all_corr_sample.RDS'),2,median)
 
-  coefs_sg_df = apply(load_file('sg_corr_sample.RDS'),2,median)
-  mp_list$gradient_sg <- coefs_sg_df[['gradient']]
-  mp_list$av_lo_child_sg <- coefs_sg_df[['av_lo_child']]
-  mp_list$intercept_sg <- coefs_sg_df[['intercept']]
+  av_lo_child <- coefs_pgsgmg_df[['av_lo_child']]
+  gradient_pg <- coefs_pgsgmg_df[['gradient_pg']]
+  intercept_pg <- coefs_pgsgmg_df[['intercept_pg']]
+  gradient_sg <- coefs_pgsgmg_df[['gradient_sg']]
+  intercept_sg <- coefs_pgsgmg_df[['intercept_sg']]
+  gradient_mg <- coefs_pgsgmg_df[['gradient_mg']]
+  intercept_mg <- coefs_pgsgmg_df[['intercept_mg']]
+  av_lo_child_all <- coefs_all_df[['av_lo_child']]
+  gradient_all <- coefs_all_df[['gradient']]
+  intercept_all <- coefs_all_df[['intercept']]
 
-  coefs_mg_df = apply(load_file('mg_corr_sample.RDS'),2,median)
-  mp_list$gradient_mg <- coefs_mg_df[['gradient']]
-  mp_list$av_lo_child_mg <- coefs_mg_df[['av_lo_child']]
-  mp_list$intercept_mg <- coefs_mg_df[['intercept']]
-
-  coefs_all_df = apply(load_file('all_corr_sample.RDS'),2,median)
-  mp_list$gradient <- coefs_all_df[['gradient']]
-  mp_list$av_lo_child <- coefs_all_df[['av_lo_child']]
-  mp_list$intercept <- coefs_all_df[['intercept']]
+  #Determine average log-odds of childhood prevalence depending on first year of available data
+  if(comparison=='u5'){
+    log_odds_child <- log(sifter::get_odds_from_prev(avg_prev))
+  }else if(comparison=='ancall'){
+    log_odds_pall <- log(sifter::get_odds_from_prev(avg_prev))
+    log_odds_child <- ((log_odds_pall - intercept_all) + av_lo_child_all*gradient_all)/(gradient_all + 1)
+  }else {
+    log_odds_pg <- log(sifter::get_odds_from_prev(avg_prev[1]))
+    log_odds_child <- ((log_odds_pg - intercept_pg) + av_lo_child*gradient_pg)/(gradient_pg + 1)
+  }
+  #Calculate ORs based on log-odds of childhood prevalence
+  mp_list$log_OR_pg_v_c<-intercept_pg+gradient_pg*(log_odds_child-av_lo_child)
+  mp_list$log_OR_ps_v_pp<-intercept_sg+gradient_sg*(log_odds_child-av_lo_child)
+  mp_list$log_OR_pm_v_pp<-intercept_mg+gradient_mg*(log_odds_child-av_lo_child)
+  mp_list$log_OR_pall_v_c<-intercept_all+gradient_all*(log_odds_child-av_lo_child_all)
 
   # # Fertility parameters
   # #Gravidity inputs
