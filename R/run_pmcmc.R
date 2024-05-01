@@ -142,10 +142,11 @@ run_pmcmc <- function(data_raw=NULL,
     ## Set initial state based on a user-given equilibrium EIR
     init_state <- initialise(init_EIR=init_EIR,mpl=mpl_pf,det_model=det_model)
     ### Set pmcmc parameters
-    init_betaa <- mcstate::pmcmc_parameter("init_betaa", rgamma(1,shape = 0.64, rate = 0.057), min = 0,
-                                           prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
+    # init_betaa <- mcstate::pmcmc_parameter("init_betaa", rgamma(1,shape = 0.64, rate = 0.057), min = 0,
+    #                                        prior = function(p) dgamma(p, shape = 0.64, rate = 0.057, log = TRUE))
 
-    pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
+    # pars = list(init_betaa = init_betaa, volatility = volatility) ## Put pmcmc parameters into a list
+    pars = list(volatility = volatility) ## Put pmcmc parameters into a list
 
 
     mcmc_pars <- mcstate::pmcmc_parameters$new(pars,

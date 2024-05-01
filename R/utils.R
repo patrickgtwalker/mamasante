@@ -539,7 +539,7 @@ user_informed <- function(init_state){ ## Wraps transformation function in a 'cl
     # init_EIR <- exp(theta[["log_init_EIR"]]) ## Exponentiate EIR since MCMC samples on the log scale for EIR
     init_state$volatility <- theta[["volatility"]]
     # print(init_state$betaa_eq)
-    init_state$betaa_eq <- theta[["init_betaa"]]
+    # init_state$betaa_eq <- theta[["init_betaa"]]
 
     if(init_state$particle_tune) {
       init_state$betaa_eq <- init_state$fixed_betaa

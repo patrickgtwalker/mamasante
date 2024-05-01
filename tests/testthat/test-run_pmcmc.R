@@ -10,7 +10,7 @@ names(tanz_hist_tx_2015_list) <- tanz_hist_tx_2015$Name
 test_run_sifter <- run_pmcmc(data_raw = data_sim, #I've added data_sim to the package for an easy test
                              target_prev = 0.3,
                              n_particles = 20,
-                             proposal_matrix = diag(0.5,2),
+                             proposal_matrix = matrix(1),
                              max_param=125,
                              n_steps = 1,
                              n_threads = 1,
