@@ -94,7 +94,7 @@ run_pmcmc <- function(data_raw=NULL,
 
 
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
-  mpl_pf <- sifter::model_param_list_create(init_age = init_age,
+  mpl_pf <- mamasante::model_param_list_create(init_age = init_age,
                                     prop_treated = prop_treated,
                                     het_brackets = het_brackets,
                                     max_param = max_param,
@@ -116,22 +116,22 @@ run_pmcmc <- function(data_raw=NULL,
   ## If a deterministic seasonal model is needed prior to the stochastic model, this loads the deterministic odin model
   det_model <- NULL
   if(seasonality_on & !is.data.frame(init_EIR)){
-    odin_det <- system.file("odin", "odin_model_stripped_seasonal.R", package = "sifter")
+    odin_det <- system.file("odin", "odin_model_stripped_seasonal.R", package = "mamasante")
     det_model <- odin::odin(odin_det)
   } else if(!(seasonality_on) & is.data.frame(init_EIR)){
-    odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
+    odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "mamasante")
     det_model <- odin::odin(odin_det)
   } else if(seasonality_on & is.data.frame(init_EIR)){
     print('Seasonality not supported with multiple EIR values.')
     print('Reverting to piece-wise constant EIR.')
-    odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "sifter")
+    odin_det <- system.file("odin", "odin_model_stripped_matched.R", package = "mamasante")
     det_model <- odin::odin(odin_det)
   }
 
   ## Load stochastic model in odin.dust
   ##Switch between EIR and mosquito emergence models
   stoch_file <- 'odinmodelmatchedstoch_mozemerg.R'
-  odin_stoch <- system.file("odin", stoch_file, package = "sifter")
+  odin_stoch <- system.file("odin", stoch_file, package = "mamasante")
   model <- odin.dust::odin_dust(odin_stoch)
 
   if(!model$public_methods$has_openmp()) warning('openmp must be enabled to run particle filter in parallel')

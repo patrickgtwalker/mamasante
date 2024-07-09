@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(sifter)
+library(mamasante)
 
-test_check("sifter")
+test_check("mamasante")

@@ -1,5 +1,5 @@
 ---
-title: "sifter introduction"
+title: "mamasante introduction"
 author: "Joseph Hicks"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-Sifter is a tool for applying Dust, Odin, and MCState to fit a semi-stochastic mechanistic disease transmission model to continuously collected prevalence data using particle Markov chain Monte Carlo (pMCMC). Specifically, this package has been developed to fit a semi-stochastic version of 'malariasimulation' to monthly malaria prevalence among pregnant women at first antenatal care (ANC) visit. This vignette walks through a simple example and describes various options and settings that can be applied.
+mamasante is a tool for applying Dust, Odin, and MCState to fit a semi-stochastic mechanistic disease transmission model to continuously collected prevalence data using particle Markov chain Monte Carlo (pMCMC). Specifically, this package has been developed to fit a semi-stochastic version of 'malariasimulation' to monthly malaria prevalence among pregnant women at first antenatal care (ANC) visit. This vignette walks through a simple example and describes various options and settings that can be applied.
 
 ## Understanding 
 
@@ -31,7 +31,7 @@ In this simple example, we will fit our model to simulated monthly prevalence da
 Like so,
 
 ```{r, fig.show='hold'}
-data_slim <- dplyr::select(sifter::data_sim,month,positive,tested)
+data_slim <- dplyr::select(mamasante::data_sim,month,positive,tested)
 data_slim
 ```
 

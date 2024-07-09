@@ -323,12 +323,12 @@ model_param_list_create <- function(
 
   #Determine average log-odds of childhood prevalence depending on first year of available data
   if(comparison=='u5'){
-    log_odds_child <- log(sifter::get_odds_from_prev(avg_prev))
+    log_odds_child <- log(mamasante::get_odds_from_prev(avg_prev))
   }else if(comparison=='ancall'){
-    log_odds_pall <- log(sifter::get_odds_from_prev(avg_prev))
+    log_odds_pall <- log(mamasante::get_odds_from_prev(avg_prev))
     log_odds_child <- ((log_odds_pall - intercept_all) + av_lo_child_all*gradient_all)/(gradient_all + 1)
   }else {
-    log_odds_pg <- log(sifter::get_odds_from_prev(avg_prev[1]))
+    log_odds_pg <- log(mamasante::get_odds_from_prev(avg_prev[1]))
     log_odds_child <- ((log_odds_pg - intercept_pg) + av_lo_child*gradient_pg)/(gradient_pg + 1)
   }
   #Calculate ORs based on log-odds of childhood prevalence

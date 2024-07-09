@@ -7,7 +7,7 @@ tanz_hist_tx_2015 <- read_csv('Q:/anc_pmcmc/tanz/MAP_TZ_treatment_2020.csv') %>%
   mutate(Name = ifelse(Name=='Dar-es-salaam','Dar Es Salaam',Name))
 tanz_hist_tx_2015_list <- tanz_hist_tx_2015$tx_prop
 names(tanz_hist_tx_2015_list) <- tanz_hist_tx_2015$Name
-test_run_sifter <- run_pmcmc(data_raw = data_sim, #I've added data_sim to the package for an easy test
+test_run_mamasante <- run_pmcmc(data_raw = data_sim, #I've added data_sim to the package for an easy test
                              target_prev = 0.3,
                              n_particles = 20,
                              proposal_matrix = matrix(1),

@@ -3,7 +3,7 @@
 #' \code{load_file} loads package file
 #'
 #' @description Load a file from within the inst/extdata folder of the
-#'   sifter package. File extension must be one of .csv, .txt, or .rds.
+#'   mamasante package. File extension must be one of .csv, .txt, or .rds.
 #'
 #' @param name the name of a file within the inst/extdata folder.
 #'
@@ -21,7 +21,7 @@ load_file <- function(name) {
   }
 
   # get full file path
-  name_full <- system.file("extdata/", name, package="sifter", mustWork = TRUE)
+  name_full <- system.file("extdata/", name, package="mamasante", mustWork = TRUE)
 
   # read in file
   if (ext == "rds" | ext == "RDS") {
@@ -420,11 +420,11 @@ initialise <- function(init_EIR,mpl,det_model){
   }
   if(!is.null(mpl$target_prev)&mpl$target_prev_group!='u5'){
     print('Optimizing initial EIR based on target prevalence in 2 to 10 year olds.')
-    opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR,mpl=mpl,method='Brent',lower=0,upper=2000)
+    opt_EIR <- stats::optim(1,fn=mamasante::get_init_EIR,mpl=mpl,method='Brent',lower=0,upper=2000)
     init_EIR <- opt_EIR$par
   }else if(!is.null(mpl$target_prev)&mpl$target_prev_group=='u5'){
     print('Optimizing initial EIR based on target prevalence in under 5 year olds.')
-    opt_EIR <- stats::optim(1,fn=sifter::get_init_EIR_u5,mpl=mpl,method='Brent',lower=0,upper=2000)
+    opt_EIR <- stats::optim(1,fn=mamasante::get_init_EIR_u5,mpl=mpl,method='Brent',lower=0,upper=2000)
     init_EIR <- opt_EIR$par
   }
   ## Run equilibrium function
@@ -737,7 +737,7 @@ get_odds_from_prev<-function(prev){
 get_init_EIR <- function(par,mpl){
   init_EIR <- par[1]
   print(init_EIR)
-  equil <- sifter::equilibrium_init_create_stripped(age_vector = mpl$init_age,
+  equil <- mamasante::equilibrium_init_create_stripped(age_vector = mpl$init_age,
                                                     ft = mpl$prop_treated,
                                                     het_brackets = mpl$het_brackets,
                                                     init_EIR = init_EIR,
@@ -756,7 +756,7 @@ get_init_EIR <- function(par,mpl){
 get_init_EIR_u5 <- function(par,mpl){
   init_EIR <- par[1]
   print(init_EIR)
-  equil <- sifter::equilibrium_init_create_stripped(age_vector = mpl$init_age,
+  equil <- mamasante::equilibrium_init_create_stripped(age_vector = mpl$init_age,
                                                     ft = mpl$prop_treated,
                                                     het_brackets = mpl$het_brackets,
                                                     init_EIR = init_EIR,
