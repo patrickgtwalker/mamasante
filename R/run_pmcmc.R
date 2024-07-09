@@ -88,7 +88,7 @@ run_pmcmc <- function(data_raw=NULL,
   het_brackets <- 5
   lag_rates <- 10
   max_steps <- 1e7
-  atol <- 1e-6
+  atol <- 1e-6 # Probably alright to bring up a bit, maybe to 1e-4 (same with rtol)
   rtol <- 1e-6
   preyears <- 5 #Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began
 
@@ -361,7 +361,7 @@ run_pmcmc <- function(data_raw=NULL,
   pf <- mcstate::particle_filter$new(data, model, n_particles, compare_funct,
                                      index = index, seed = seed,
                                      stochastic_schedule = stochastic_schedule,
-                                     ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol),
+                                     ode_control = dust::dust_ode_control(max_steps = max_steps, atol = atol, rtol = rtol,debug_record_step_times=FALSE),
                                      n_threads = n_threads)
 
   # print('about to set up pmcmc control')
