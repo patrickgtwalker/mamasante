@@ -172,6 +172,15 @@ phi[1:na,1:nh] <- phi0*((1-phi1)/(1+(IC[i,j]/IC0)^kC) + phi1)
 dim(phi0to59) <- c(age59,nh)
 phi0to59[1:age59,] <- phi[i,j]*den[i]*het_wt[j]
 output(phi_out) <- sum(phi0to59[,])
+dim(IC_all) <- c(na,nh)
+dim(IB_all) <- c(na,nh)
+dim(ID_all) <- c(na,nh)
+IC_all[,] <- IC[i,j]*den[i]*het_wt[j]
+IB_all[,] <- IB[i,j]*den[i]*het_wt[j]
+ID_all[,] <- ID[i,j]*den[i]*het_wt[j]
+output(IC_out) <- sum(IC_all[,])
+output(IB_out) <- sum(IB_all[,])
+output(ID_out) <- sum(ID_all[,])
 
 # IB - infection blocking immunity
 init_IB[,] <- user()
@@ -388,6 +397,8 @@ deriv(Iv) <- incv - mu*Iv
 # Total mosquito population
 mv = Sv+Ev+Iv
 output(spz_rate) <- Iv/mv
+output(eff_moz_pop) <- mv
+output(moz2human_ratio) <- mv/H
 
 ##------------------------------------------------------------------------------
 ###################
@@ -482,23 +493,20 @@ prevall[,] <- T[i,j] + D[i,j]  + A[i,j]*p_det[i,j]
 output(prev_all) <- sum(prevall[,])/sum(den[])
 logodds_child <- log(prev_u5/(1-prev_u5))
 
-gradient_pg <- user()
-av_lo_child_pg <- user()
-intercept_pg <- user()
-gradient_sg <- user()
-av_lo_child_sg <- user()
-intercept_sg <- user()
-gradient_mg <- user()
-av_lo_child_mg <- user()
-intercept_mg <- user()
+log_OR_pg_v_c <- user()
+log_OR_ps_v_pp <- user()
+log_OR_pm_v_pp <- user()
+log_OR_pall_v_c <- user()
 
-log_odds_pg <- logodds_child+gradient_pg*(logodds_child-av_lo_child_pg)+intercept_pg
-log_odds_sg <- logodds_child+gradient_sg*(logodds_child-av_lo_child_sg)+intercept_sg
-log_odds_mg <- logodds_child+gradient_mg*(logodds_child-av_lo_child_mg)+intercept_mg
+log_odds_pg <- logodds_child + log_OR_pg_v_c
+log_odds_sg <- log_odds_pg + log_OR_ps_v_pp
+log_odds_mg <- log_odds_pg + log_OR_pm_v_pp
+log_odds_all <- logodds_child + log_OR_pall_v_c
 
 output(prev_preg_pg) <- exp(log_odds_pg)/(1+exp(log_odds_pg))
 output(prev_preg_sg) <- exp(log_odds_sg)/(1+exp(log_odds_sg))
 output(prev_preg_mg) <- exp(log_odds_mg)/(1+exp(log_odds_mg))
+output(prev_preg_all) <- exp(log_odds_all)/(1+exp(log_odds_all))
 
 #Get prevalence by each age group
 ###Need to create switch to turn this on and off

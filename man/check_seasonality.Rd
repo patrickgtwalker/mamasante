@@ -15,6 +15,6 @@ check_seasonality(theta, mpl_pf, season_model)
 model. Default = NULL}
 }
 \description{
-\code{transform} Calculates time series of the prefix seasonal deterministic
+\code{check_seasonality} Calculates time series of the prefix seasonal deterministic
 model given the posterior distribution of pMCMC parameters
 }

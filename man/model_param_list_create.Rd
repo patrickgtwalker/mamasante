@@ -69,6 +69,8 @@ model_param_list_create(
   DY = 365,
   country = NULL,
   admin_unit = NULL,
+  comparison = NULL,
+  avg_prev = 0.5,
   ...
 )
 }
@@ -196,6 +198,10 @@ model_param_list_create(
 \item{irs_cov}{The proportion of people living in houses that have been sprayed. Default = 0}
 
 \item{DY}{Duration of year (days). Default = 365}
+
+\item{comparison}{Comparison group used to calculate likelihood}
+
+\item{avg_prev}{Average prevalence during first year of data collection}
 
 \item{...}{Any other parameters needed for non-standard model. If they share the same name
 as any of the defined parameters \code{model_param_list_create} will stop. You can either write

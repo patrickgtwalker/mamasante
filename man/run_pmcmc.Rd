@@ -15,25 +15,21 @@ run_pmcmc(
   proposal_matrix,
   max_param = 1000,
   prop_treated = 0.4,
-  max_steps = 1e+07,
-  atol = 1e-06,
-  rtol = 1e-06,
   n_steps = 500,
   n_threads = 4,
   n_chains = 1,
   n_workers = 1,
-  lag_rates = 10,
-  state_check = 0,
+  state_check = FALSE,
   country = NULL,
   admin_unit = NULL,
-  preyears = 2,
-  seasonality_on = 1,
-  seasonality_check = 0,
+  seasonality_on = TRUE,
+  seasonality_check = FALSE,
+  check_flexibility = FALSE,
   seed = 1L,
   start_pf_time = 30,
   particle_tune = FALSE,
-  stoch_param = c("EIR", "betaa"),
-  comparison = c("u5", "pgmg", "pgsg")
+  comparison = c("u5", "pg", "pgmg", "pgsg", "ancall"),
+  initial = "informed"
 )
 }
 \arguments{
@@ -54,12 +50,6 @@ given a target prevalence in under 5yos}
 
 \item{prop_treated}{Proportion of clinical cases that receive effective treatment (default = 40\%)}
 
-\item{max_steps}{Maximum steps for particle filter (default = 1e7)}
-
-\item{atol}{atol for particle filter (default = 1e-3)}
-
-\item{rtol}{rtol for particle filter (default = 1e-6)}
-
 \item{n_steps}{Number of MCMC steps in a single chain (default = 500)}
 
 \item{n_threads}{Number of processing threads (default = 4)}
@@ -67,8 +57,6 @@ given a target prevalence in under 5yos}
 \item{n_chains}{Number of chains (default = 1)}
 
 \item{n_workers}{Number of workers (default = 4)}
-
-\item{lag_rates}{Number of delay compartments (default = 10)}
 
 \item{state_check}{Run equilibrium checks, if state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
 If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
@@ -78,11 +66,11 @@ If state_check = 0, no values are printed}
 
 \item{admin_unit}{Name of administrative unit (needed if using seasonality model)}
 
-\item{preyears}{Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began (default = 2)}
-
 \item{seasonality_on}{Toggle seasonality model run before observed time period (default = 1)}
 
 \item{seasonality_check}{Toggle saving values of seasonality equilibrium (default = 1)}
+
+\item{check_flexibility}{Toggle saving values of flexibility period}
 
 \item{seed}{Allows user to specify a seed (default = 1L)}
 
@@ -90,12 +78,14 @@ If state_check = 0, no values are printed}
 
 \item{particle_tune}{Logical to determine if tuning the number of particles should be performed.}
 
-\item{stoch_param}{The parameters which will stochastically update over the time series, 'EIR' or 'betaa'.}
-
 \item{comparison}{The comparison function to be used. Either 'u5' which
 equates the observed prevalence to prevalence under 5 years old in
 the model or 'pgmg' which calculates prevalence in primigravid and
 multigravid pregnant women for comparison with observed ANC data.}
+
+\item{initial}{Is the initial equilibrium state informed by the user ('user-informed') or by the observed data ('fitted')?}
+
+\item{preyears}{Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began (default = 2)}
 }
 \description{
 This function sets up and runs a particle MCMC that uses Dust, Odin and MCState
