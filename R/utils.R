@@ -127,6 +127,19 @@ admin_match <- function(admin_unit = NULL, country = NULL,
 }
 
 #------------------------------------------------
+#' Change missing data to 0s so dbinom function returns 0 (instead of NA)
+#'
+#' \code{format_na} Change missing data to 0s so dbinom function returns 0 (instead of NA)
+#'
+#' @param df Data input from user
+#'   Default = NULL
+#' @export
+format_na <- function(df){
+  df$tested <- ifelse(is.na(df$tested),0,df$tested)
+  df$positive <- ifelse(df$tested==0,0,df$positive)
+  return(df)
+}
+#------------------------------------------------
 #' Process raw data for use in pMCMC
 #'
 #' \code{data_process} Transform data file
@@ -265,30 +278,6 @@ transform_init <- function(final_state = NULL){
 }
 
 #------------------------------------------------
-#' Binomial function that checks for NAs
-#'
-#' \code{ll_binom} Binomial function that checks for NAs to be used in the compare
-#'                  function in the particle filter.
-#'
-#' @param positive Observed number of positive tests. Default = NULL
-#' @param tested Observed number of tests. Default = NULL
-#' @param model Output from model.  Default = NULL
-#'
-#' @export
-ll_binom <- function(positive, tested, model) {
-  # if (is.na(positive)) {
-  #   # Creates vector of NAs in ll with same length, if no data
-  #   ll_obs <- rep(NA,length(model))
-  # } else {
-    ll_obs <- dbinom(x = positive,
-                     size = tested,
-                     prob = model,
-                     log = FALSE)
-  # }
-  ll_obs
-}
-
-#------------------------------------------------
 #' Compare function to calculate likelihood
 #'
 #' \code{compare_u5} Compare function that compares observed data with model estimate
@@ -305,9 +294,6 @@ compare_u5 <- function(state, observed, pars = NULL) {
   # cat('Observed positive:\n',observed$positive,'\n')
   # cat('Observed tested:\n',observed$tested,'\n')
   # cat('Estimated prevalence:\n',state[1,],'\n')
-  #skip comparison if data is missing
-  if(is.na(observed$positive)) {
-    return(numeric(length(state[1,])))}
   ll <- dbinom(x = observed$positive,
          size = observed$tested,
          prob = state[1,],
@@ -329,8 +315,6 @@ compare_u5 <- function(state, observed, pars = NULL) {
 #'
 #' @export
 compare_pg <- function(state, observed, pars = NULL) {
-  #skip comparison if data is missing
-  if(is.na(observed$positive)) {return(numeric(length(state[1,])))}
 
   ll_pg <- dbinom(x = observed$positive,
                   size = observed$tested,
@@ -353,8 +337,6 @@ compare_pg <- function(state, observed, pars = NULL) {
 #'
 #' @export
 compare_pgmg <- function(state, observed, pars = NULL) {
-  #skip comparison if data is missing
-  if(is.na(observed$positive.pg)&is.na(observed$positive.mg)) {return(numeric(length(state[1,])))}
 
   ll_pg <- dbinom(x = observed$positive.pg,
                           size = observed$tested.pg,

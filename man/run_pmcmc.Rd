@@ -58,9 +58,9 @@ given a target prevalence in under 5yos}
 
 \item{n_workers}{Number of workers (default = 4)}
 
-\item{state_check}{Run equilibrium checks, if state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
-If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
-If state_check = 0, no values are printed}
+\item{state_check}{If state_check = TRUE, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
+If state_check = TRUE and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
+If state_check = FALSE, no values are printed}
 
 \item{country}{Name of country (needed if using seasonality model)}
 

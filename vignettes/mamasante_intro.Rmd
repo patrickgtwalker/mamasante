@@ -18,13 +18,17 @@ knitr::opts_chunk$set(
 
 mamasante is a tool for applying Dust, Odin, and MCState to fit a semi-stochastic mechanistic disease transmission model to continuously collected prevalence data using particle Markov chain Monte Carlo (pMCMC). Specifically, this package has been developed to fit a semi-stochastic version of 'malariasimulation' to monthly malaria prevalence among pregnant women at first antenatal care (ANC) visit. This vignette walks through a simple example and describes various options and settings that can be applied.
 
-## Understanding 
+## Understanding
+
+In the deterministic version of 'malariasimulation,' seasonal variation in malaria transmission intensity is controlled by a Fourier series whose coefficients have been previously estimated from historical rainfall data. Different Fourier series equations have been estimated for each administrative area (level 1) across 80 countries, but as these are smoothed averages of rainfall, year-on-year differences in rainfall and therefore malaria transmission intensity are not captured resulting in non-realistic, rigidly cyclical model estimates. While this provides a decent seasonal profile for fitting cross-sectional data collected every few years (as occurs with Demographic Health Surveys and Malaria Indicator Surveys), this method is not flexible enough for fitting the model to monthly prevalence data, as collected at ANC1.
+
+To provide more flexibility, we have replaced this seasonal mechanism with a stochastic process, in which the emergence rate of adult mosquitoes from pupae varies in a random-walk. Each month, the change in mosquito emergence rate is determined by a normally distributed random variable, *δ*, and a volatility constant, *σ*. To ensure *β* values remains realistic, the upper limit of the random walk was restricted to *β_max*. The pMCMC then filters likely trajectories of the emergence rate by comparing observed prevalence with that estimated by the model, given the emergence rate trend. The output provides a posterior distribution of likely model trajectories. Because the relationship between mosquito emergence rate and infection prevalence is defined by a mechanistic model, we can extract trends in other relevant indicators, such as the entomological inoculation rate (EIR) or clinical incidence, which are difficult to observe directly.
 
 ## Input Data
 
 In this simple example, we will fit our model to simulated monthly prevalence data in children under 5 years old. Data for fitting should be a data frame with at least three columns:
 
-1.  Month (hear formatted as 'yearmon')
+1.  Month (hear formatted as 'yearmon', provided by the package 'zoo')
 2.  The number of inidividuals tested
 3.  Of those tested, the number of positive test results
 
@@ -51,13 +55,19 @@ The 'run_pmcmc' function is the central tool to fit our model to observed data. 
 4.  Run the pMCMC.
 5.  Format output.
 
-
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
-
-```         
-output: 
-  rmarkdown::html_vignette:
-    css: mystyles.css
+```{r, fig.show='hold'}
+result <- mamasante::run_pmcmc(data_raw=data_slim,
+                       n_particles=200,
+                       proposal_matrix = matrix(1),
+                       target_prev = 0.4,
+                       target_prev_group = 'u5',
+                       max_param=125,
+                       prop_treated = 0.4,
+                       n_steps = 100,
+                       seed = 1L,
+                       start_pf_time = 30*12,
+                       comparison = 'u5',
+                       initial = 'informed')
 ```
 
 ## Figures

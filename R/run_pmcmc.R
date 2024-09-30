@@ -16,9 +16,9 @@
 #' @param n_threads Number of processing threads (default = 4)
 #' @param n_chains Number of chains (default = 1)
 #' @param n_workers Number of workers (default = 4)
-#' @param state_check Run equilibrium checks, if state_check = 1, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
-#'                    If state_check = 1 and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
-#'                    If state_check = 0, no values are printed
+#' @param state_check If state_check = TRUE, returns expected deriv values which should equal 0 and sets stochastic model to have EIR constant at init_EIR
+#'                    If state_check = TRUE and seasonality_on = 1, then the deterministic seasonal model is still run, but theta2 is forced to 1, forcing a constant seasonality profile
+#'                    If state_check = FALSE, no values are printed
 #' @param country Name of country (needed if using seasonality model)
 #' @param admin_unit Name of administrative unit (needed if using seasonality model)
 #' @param preyears Length of time in years the deterministic seasonal model should run before Jan 1 of the year observations began (default = 2)
@@ -65,16 +65,22 @@ run_pmcmc <- function(data_raw=NULL,
                       initial = 'informed'){
   ##Merge primigrav and multigrav datasets if necessary.
   if(comparison=='pgmg' | comparison=='pgsg'){
+    data_raw_pg <- format_na(data_raw_pg)
+    data_raw_mg <- format_na(data_raw_mg)
+
     data_raw <- dplyr::left_join(data_raw_pg,data_raw_mg,by=c('month'),suffix = c('.pg','.mg'))
-    pg_avg_prev <- sum(data_raw[1:12,'positive.pg'])/sum(data_raw[1:12,'tested.pg'])
-    mg_avg_prev <- sum(data_raw[1:12,'positive.mg'])/sum(data_raw[1:12,'tested.mg'])
+    pg_avg_prev <- sum(data_raw[1:12,'positive.pg'],na.rm=TRUE)/sum(data_raw[1:12,'tested.pg'],na.rm=TRUE)
+    mg_avg_prev <- sum(data_raw[1:12,'positive.mg'],na.rm=TRUE)/sum(data_raw[1:12,'tested.mg'],na.rm=TRUE)
     avg_prev <- c(pg_avg_prev,mg_avg_prev)
   } else if(comparison=='pg'){
-    avg_prev <- sum(data_raw[1:12,'positive'])/sum(data_raw[1:12,'tested'])
+    data_raw <- format_na(data_raw)
+    avg_prev <- sum(data_raw[1:12,'positive'],na.rm=TRUE)/sum(data_raw[1:12,'tested'],na.rm=TRUE)
   } else if(comparison=='ancall'){
-    avg_prev <- sum(data_raw[1:12,'positive'])/sum(data_raw[1:12,'tested'])
+    data_raw <- format_na(data_raw)
+    avg_prev <- sum(data_raw[1:12,'positive'],na.rm=TRUE)/sum(data_raw[1:12,'tested'],na.rm=TRUE)
   } else if (comparison=='u5'){
-    avg_prev <- sum(data_raw[1:12,'positive'])/sum(data_raw[1:12,'tested'])
+    data_raw <- format_na(data_raw)
+    avg_prev <- sum(data_raw[1:12,'positive'],na.rm=TRUE)/sum(data_raw[1:12,'tested'],na.rm=TRUE)
   }
   Sys.setenv("MC_CORES"=n_threads)
 
@@ -380,6 +386,7 @@ run_pmcmc <- function(data_raw=NULL,
 
   # print('parameters set')
   # print('starting pmcmc run')
+  # print(mpl_pf)
   ### Run pMCMC
   start.time <- Sys.time()
   pmcmc_run <- mcstate::pmcmc(mcmc_pars, pf, control = control)
