@@ -61,7 +61,7 @@ run_pmcmc <- function(data_raw=NULL,
                       seed = 1L,
                       start_pf_time = 30,
                       particle_tune = FALSE,
-                      comparison = c('u5','pg','pgmg','pgsg','ancall'),
+                      comparison = c('u5','pg','sg','mg','pgmg','pgsg','ancall'),
                       initial = 'informed'){
   ##Merge primigrav and multigrav datasets if necessary.
   if(comparison=='pgmg' | comparison=='pgsg'){
@@ -72,13 +72,7 @@ run_pmcmc <- function(data_raw=NULL,
     pg_avg_prev <- sum(data_raw[1:12,'positive.pg'],na.rm=TRUE)/sum(data_raw[1:12,'tested.pg'],na.rm=TRUE)
     mg_avg_prev <- sum(data_raw[1:12,'positive.mg'],na.rm=TRUE)/sum(data_raw[1:12,'tested.mg'],na.rm=TRUE)
     avg_prev <- c(pg_avg_prev,mg_avg_prev)
-  } else if(comparison=='pg'){
-    data_raw <- format_na(data_raw)
-    avg_prev <- sum(data_raw[1:12,'positive'],na.rm=TRUE)/sum(data_raw[1:12,'tested'],na.rm=TRUE)
-  } else if(comparison=='ancall'){
-    data_raw <- format_na(data_raw)
-    avg_prev <- sum(data_raw[1:12,'positive'],na.rm=TRUE)/sum(data_raw[1:12,'tested'],na.rm=TRUE)
-  } else if (comparison=='u5'){
+  } else {
     data_raw <- format_na(data_raw)
     avg_prev <- sum(data_raw[1:12,'positive'],na.rm=TRUE)/sum(data_raw[1:12,'tested'],na.rm=TRUE)
   }
@@ -279,6 +273,56 @@ run_pmcmc <- function(data_raw=NULL,
                      moz2human_ratio = info$index$moz2human_ratio))
     }
     compare_funct <- compare_pgmg
+  } else if(comparison=='sg'){
+    index <- function(info) {
+      list(run = c(prev_mg = info$index$prev_preg_sg),
+           state = c(prev_05 = info$index$prev,
+                     prev_pg = info$index$prev_preg_pg,
+                     prev_sg = info$index$prev_preg_sg,
+                     EIR = info$index$EIR_out,
+                     betaa = info$index$betaa_out,
+                     clininc_all = info$index$inc,
+                     prev_all = info$index$prevall,
+                     clininc_05 = info$index$inc05,
+                     Dout = info$index$Dout,
+                     Aout = info$index$Aout,
+                     Uout = info$index$Uout,
+                     p_det_out = info$index$p_det_out,
+                     phi_out = info$index$phi_out,
+                     b_out = info$index$b_out,
+                     IC_out = info$index$IC_out,
+                     IB_out = info$index$IB_out,
+                     ID_out = info$index$ID_out,
+                     spz_rate = info$index$spz_rate,
+                     eff_moz_pop = info$index$eff_moz_pop,
+                     moz2human_ratio = info$index$moz2human_ratio))
+    }
+    compare_funct <- compare_mg
+  } else if(comparison=='mg'){
+    index <- function(info) {
+      list(run = c(prev_mg = info$index$prev_preg_mg),
+           state = c(prev_05 = info$index$prev,
+                     prev_pg = info$index$prev_preg_pg,
+                     prev_mg = info$index$prev_preg_mg,
+                     EIR = info$index$EIR_out,
+                     betaa = info$index$betaa_out,
+                     clininc_all = info$index$inc,
+                     prev_all = info$index$prevall,
+                     clininc_05 = info$index$inc05,
+                     Dout = info$index$Dout,
+                     Aout = info$index$Aout,
+                     Uout = info$index$Uout,
+                     p_det_out = info$index$p_det_out,
+                     phi_out = info$index$phi_out,
+                     b_out = info$index$b_out,
+                     IC_out = info$index$IC_out,
+                     IB_out = info$index$IB_out,
+                     ID_out = info$index$ID_out,
+                     spz_rate = info$index$spz_rate,
+                     eff_moz_pop = info$index$eff_moz_pop,
+                     moz2human_ratio = info$index$moz2human_ratio))
+    }
+    compare_funct <- compare_mg
   } else if(comparison=='ancall'){
     index <- function(info) {
       list(run = c(prev_anc_all = info$index$prev_preg_all),

@@ -323,6 +323,29 @@ compare_pg <- function(state, observed, pars = NULL) {
 
   return(ll_pg)
 }
+
+#------------------------------------------------
+#' Compare function to calculate likelihood
+#'
+#' \code{compare_mg} Compare function that compares observed data with model estimate
+#'  to calculate likelihood for the particle filter. Converts under 5 year old
+#'  prevalence in the model to prevalence among multigravid
+#'  women based on coefficients from a separate regression analysis.
+#'
+#' @param state Model output. Default = NULL
+#' @param observed Oberved data. Default = NULL
+#' @param pars Parameters, optional.
+#'
+#' @export
+compare_mg <- function(state, observed, pars = NULL) {
+
+  ll_mg <- dbinom(x = observed$positive,
+                  size = observed$tested,
+                  prob = state['prev_mg',],
+                  log = TRUE)
+
+  return(ll_mg)
+}
 #------------------------------------------------
 #' Compare function to calculate likelihood
 #'

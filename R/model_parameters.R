@@ -327,7 +327,13 @@ model_param_list_create <- function(
   }else if(comparison=='ancall'){
     log_odds_pall <- log(mamasante::get_odds_from_prev(avg_prev))
     log_odds_child <- ((log_odds_pall - intercept_all) + av_lo_child_all*gradient_all)/(gradient_all + 1)
-  }else {
+  } else if(comparison=='mg'){
+    log_odds_mg <- log(mamasante::get_odds_from_prev(avg_prev))
+    log_odds_child <- (log_odds_mg - intercept_pg - intercept_mg + av_lo_child*(gradient_pg+gradient_mg))/(gradient_pg+gradient_mg+1)
+  } else if(comparison=='sg'){
+    log_odds_sg <- log(mamasante::get_odds_from_prev(avg_prev))
+    log_odds_child <- (log_odds_sg - intercept_pg - intercept_sg + av_lo_child*(gradient_pg+gradient_sg))/(gradient_pg+gradient_sg+1)
+  } else {
     log_odds_pg <- log(mamasante::get_odds_from_prev(avg_prev[1]))
     log_odds_child <- ((log_odds_pg - intercept_pg) + av_lo_child*gradient_pg)/(gradient_pg + 1)
   }
