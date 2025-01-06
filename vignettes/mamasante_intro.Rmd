@@ -28,9 +28,9 @@ To provide more flexibility, we have replaced this seasonal mechanism with a sto
 
 In this simple example, we will fit our model to simulated monthly prevalence data in children under 5 years old. Data for fitting should be a data frame with at least three columns:
 
-1.  Month (hear formatted as 'yearmon', provided by the package 'zoo')
-2.  The number of inidividuals tested
-3.  Of those tested, the number of positive test results
+1.  `month`: Month (here formatted as 'yearmon', provided by the package 'zoo')
+2.  `tested`:The number of individuals tested
+3.  `positive`: Of those tested, the number of positive test results
 
 Like so,
 
@@ -47,10 +47,10 @@ data_slim
 
 ## Running a pMCMC fitting
 
-The 'run_pmcmc' function is the central tool to fit our model to observed data. It formats the provided dataframe, sets up required functions and parameters, and finally runs the pMCMC. Broadly, the flow of actions is as follows:
+The `run_pmcmc` function is the central tool to fit our model to observed data. It formats the provided data set, sets up required functions and parameters, and finally runs the pMCMC. Broadly, the flow of actions is as follows:
 
 1.  Process provided data set, specifically formatting necessary time variables.
-2.  Format and declare parameters. These include both constant or known parameter values needed for the malariasimulation and pMCMC parameters that will be fit.
+2.  Format and declare parameters. These include both constant or known parameter values needed for malariasimulation as well as pMCMC parameters that will be fit.
 3.  Set particle filter and pMCMC settings.
 4.  Run the pMCMC.
 5.  Format output.
