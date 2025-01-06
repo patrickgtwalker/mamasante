@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-mamasante is a tool for applying Dust, Odin, and MCState to fit a semi-stochastic mechanistic disease transmission model to continuously collected prevalence data using particle Markov chain Monte Carlo (pMCMC). Specifically, this package has been developed to fit a semi-stochastic version of 'malariasimulation' to monthly malaria prevalence among pregnant women at first antenatal care (ANC) visit. This vignette walks through a simple example and describes various options and settings that can be applied.
+mamasante is a tool for applying Dust, Odin, and MCState to fit a semi-stochastic mechanistic disease transmission model to continuously collected prevalence data using particle Markov chain Monte Carlo (pMCMC). Specifically, this package has been developed to fit a semi-stochastic version of 'malariasimulation' to monthly malaria prevalence among pregnant women at first antenatal care (ANC) visit. This vignette walks through a simple example and describes various options and settings that can be applied.check
 
 ## Understanding
 
